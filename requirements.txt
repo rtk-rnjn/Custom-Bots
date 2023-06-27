@@ -1,0 +1,5 @@
+discord.py
+jishaku
+python-dotenv
+uvloop
+colorama

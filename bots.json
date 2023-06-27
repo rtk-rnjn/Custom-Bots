@@ -1,0 +1,18 @@
+{
+    "master_owner": 741614468546560092,
+    "all_cogs": [
+        "cogs.meta"
+    ],
+    "bots": [
+        {
+            "id": 892293616691728394,
+            "name": "GUNNER Z ESPORTS",
+            "prefix": "$",
+            "status": "dnd",
+            "activity": "watching",
+            "media": "WATCHING GNRZ ESPORTS",
+            "owner_id": 873396664516349953,
+            "cogs": ["~"]
+        }
+    ]
+}
