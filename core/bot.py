@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import logging.handlers
 import os
+from typing import Any
 
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord.ext import commands
+from discord.message import Message
 
 from utils import Config, CustomFormatter, all_cogs
+
+from .context import Context
 
 os.environ["JISHAKU_HIDE"] = "True"
 os.environ["JISHAKU_NO_UNDERSCORE"] = "True"
@@ -62,3 +66,78 @@ class Bot(commands.Bot):
         bot_id = getattr(self.user, "id", None)
 
         print(f"Logged in as {self.user} ({bot_id})")
+
+    async def get_or_fetch_member(
+        self,
+        guild: discord.Guild,
+        member_id: int | str | discord.Object,
+        in_guild: bool = True,
+    ) -> discord.Member | discord.User | None:
+        """|coro|
+
+        Looks up a member in cache or fetches if not found.
+
+        Parameters
+        -----------
+        guild: Guild
+            The guild to look in.
+        member_id: int
+            The member ID to search for.
+
+        Returns
+        ---------
+        Optional[Member]
+            The member or None if not found.
+        """
+
+        member_id = (
+            member_id.id if isinstance(member_id, discord.Object) else int(member_id)
+        )
+
+        if not in_guild:
+            return await self.getch(self.get_user, self.fetch_user, int(member_id))
+        member = guild.get_member(member_id)
+        if member is not None:
+            return member
+
+        try:
+            return await guild.fetch_member(member_id)
+        except discord.HTTPException:
+            pass
+
+        members = await guild.query_members(limit=1, user_ids=[member_id], cache=True)
+        return members[0] if members else None
+
+    async def getch(self, get_function, fetch_function, entity) -> Any:
+        """|coro|
+
+        Gets an entity from cache or fetches if not found.
+
+        Parameters
+        -----------
+        get_function: Callable
+            The function to get the entity from cache.
+        fetch_function: Callable
+            The function to fetch the entity if not found in cache.
+        entity: Any
+            The entity to search for.
+
+        Returns
+        ---------
+        Any
+            The entity or None if not found.
+        """
+        entity = await get_function(entity)
+        if entity is not None:
+            return entity
+
+        try:
+            return await fetch_function(entity)
+        except discord.HTTPException:
+            pass
+
+        return None
+
+    async def process_commands(self, message: Message) -> None:
+        ctx: Context = await self.get_context(message, cls=Context)
+        await self.invoke(ctx)

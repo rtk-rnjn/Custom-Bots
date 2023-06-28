@@ -3,3 +3,5 @@ jishaku
 python-dotenv
 uvloop
 colorama
+python-dateutil
+parsedatetime

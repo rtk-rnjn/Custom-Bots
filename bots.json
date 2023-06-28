@@ -1,7 +1,8 @@
 {
     "master_owner": 741614468546560092,
     "all_cogs": [
-        "cogs.meta"
+        "cogs.meta",
+        "cogs.mod"
     ],
     "bots": [
         {
