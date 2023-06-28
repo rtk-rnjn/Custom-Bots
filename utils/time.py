@@ -6,12 +6,11 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     from typing_extensions import Self
+    from core import Context
 
 import parsedatetime as pdt
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands
-
-from core import Context
 
 # Monkey patch mins and secs into the units
 units = pdt.pdtLocales["en_US"].units
