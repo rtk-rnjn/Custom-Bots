@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
+
 import discord
 from discord.ext import commands
-import logging
+
 from core import Bot, Cog, Context
 
 log = logging.getLogger("meta")
+
 
 class Meta(Cog):
     def __init__(self, bot: Bot) -> None:

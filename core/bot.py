@@ -58,6 +58,7 @@ class Bot(commands.Bot):
             commands.CooldownMapping.from_cooldown(3, 5, commands.BucketType.user)
         )
         self._auto_spam_count: "Counter[int]" = Counter()
+        self._BotBase__cogs = commands.core._CaseInsensitiveDict()
 
     async def setup_hook(self) -> None:
         await self.load_extension("jishaku")
@@ -237,7 +238,4 @@ class Bot(commands.Bot):
 
         if isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            await ctx.send(f"Invalid argument: {error}")
-            return await ctx.send(
-                f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info."
-            )
+            return await ctx.send(f"Invalid argument: {error}")

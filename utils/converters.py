@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 __all__ = (
     "can_execute_action",
     "MemberID",
+    "RoleID",
     "BannedMember",
     "ActionReason",
     "ToAsync",
@@ -64,6 +65,30 @@ class MemberID(commands.Converter):
                 f"{ctx.author.mention} can not {ctx.command.qualified_name} the {m}, as the their's role is above you"  # type: ignore
             )
         return m  # type: ignore
+
+
+class RoleID(commands.Converter):
+    async def convert(self, ctx: Context, argument: str) -> Optional[discord.Role]:
+        assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
+        try:
+            role: Optional[discord.Role] = await commands.RoleConverter().convert(
+                ctx, argument
+            )
+        except commands.BadArgument:
+            try:
+                role_id = int(argument, base=10)
+            except ValueError:
+                raise commands.BadArgument(
+                    f"{argument} is not a valid role or role ID."
+                ) from None
+            else:
+                role: Optional[discord.Role] = discord.utils.get(
+                    ctx.guild.roles, id=role_id
+                )
+                if role is None:
+                    raise commands.BadArgument(
+                        f"{argument} is not a valid role or role ID."
+                    ) from None
 
 
 class BannedMember(commands.Converter):

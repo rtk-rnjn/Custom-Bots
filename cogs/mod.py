@@ -12,7 +12,7 @@ from discord.ext import commands
 from typing_extensions import Annotated
 
 from core import Bot, Cog, Context
-from utils import ActionReason, MemberID, ShortTime
+from utils import ActionReason, MemberID, RoleID, ShortTime
 
 log = logging.getLogger("mod")
 
@@ -22,11 +22,20 @@ class Arguments(argparse.ArgumentParser):
         raise RuntimeError(message)
 
 
-class Moderator(Cog):
+HELP_MESSAGE_KICK_BAN = """
+- Make sure Bot role is above the target role in the role hierarchy.
+- Make sure Bot has the permission to kick/ban members.
+- Make sure Bot can access the target channel/member.
+"""
+
+
+class Mod(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
     async def cog_check(self, ctx: Context) -> bool:
+        if not ctx.guild:
+            raise commands.BadArgument("This command can only be used in a server.")
         return ctx.guild is not None
 
     async def kick_method(
@@ -41,7 +50,9 @@ class Moderator(Cog):
             else:
                 return True
 
-        return False
+        raise commands.BadArgument(
+            f"User `{user}` is not a member of guild `{guild.name}`"
+        )
 
     async def ban_method(
         self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str
@@ -110,13 +121,21 @@ class Moderator(Cog):
         after: int | None = None,
     ) -> bool:
         if limit > 1000:
-            return False
+            raise commands.BadArgument("Can only purge up to 1000 messages at a time.")
 
         passed_before = ctx.message if before is None else discord.Object(before)
         passed_after = discord.Object(after) if after is not None else None
 
         try:
-            if isinstance(ctx.channel, discord.TextChannel):
+            if isinstance(
+                ctx.channel,
+                (
+                    discord.TextChannel,
+                    discord.Thread,
+                    discord.ForumChannel,
+                    discord.VoiceChannel,
+                ),
+            ):
                 log.debug(
                     "purging %s messages in channel %s in guild %s",
                     limit,
@@ -130,10 +149,12 @@ class Moderator(Cog):
                     check=predicate,
                 )
                 return True
+            else:
+                raise commands.BadArgument(
+                    "This command can only be used in text channels."
+                )
         except discord.Forbidden:
             return False
-
-        return False
 
     async def timeout_method(
         self,
@@ -141,17 +162,21 @@ class Moderator(Cog):
         user: discord.Member | discord.User,
         guild: discord.Guild,
         duration: datetime.datetime,
-        reason: str,
+        reason: Optional[str] = None,
     ) -> bool:
         member = guild.get_member(user.id)
         if member is None:
-            return False
+            raise commands.BadArgument(
+                f"User `{user}` is not a member of guild `{guild.name}`"
+            )
 
         if (
             member.timed_out_until is not None
             and member.timed_out_until > discord.utils.utcnow()
         ):
-            return False
+            raise commands.BadArgument(
+                f"User `{member}` is already timed out. Their timeout will remove **{discord.utils.format_dt(member.timed_out_until, 'R')}**"
+            )
 
         try:
             log.debug("timing out %s in guild %s till %s", member, guild.name, duration)
@@ -166,11 +191,13 @@ class Moderator(Cog):
         *,
         user: discord.Member | discord.User,
         guild: discord.Guild,
-        reason: str,
+        reason: Optional[str] = None,
     ) -> bool:
         member = guild.get_member(user.id)
         if member is None:
-            return False
+            raise commands.BadArgument(
+                f"User `{user}` is not a member of guild `{guild.name}`"
+            )
 
         if member.timed_out_until is None:
             return False
@@ -178,6 +205,52 @@ class Moderator(Cog):
         try:
             log.debug("unmuting %s in guild %s", member, guild.name)
             await member.edit(timed_out_until=None, reason=reason)
+        except discord.Forbidden:
+            return False
+        else:
+            return True
+
+    async def add_role_method(
+        self,
+        *,
+        user: discord.Member | discord.User,
+        guild: discord.Guild,
+        role: discord.Role,
+        reason: Optional[str] = None,
+    ) -> bool:
+        member = guild.get_member(user.id)
+        if member is None:
+            raise commands.BadArgument(
+                f"User `{user}` is not a member of guild `{guild.name}`"
+            )
+
+        try:
+            log.debug("adding role %s to %s in guild %s", role.name, member, guild.name)
+            await member.add_roles(role, reason=reason)
+        except discord.Forbidden:
+            return False
+        else:
+            return True
+
+    async def remove_role_method(
+        self,
+        *,
+        user: discord.Member | discord.User,
+        guild: discord.Guild,
+        role: discord.Role,
+        reason: Optional[str] = None,
+    ) -> bool:
+        member = guild.get_member(user.id)
+        if member is None:
+            raise commands.BadArgument(
+                f"User `{user}` is not a member of guild `{guild.name}`"
+            )
+
+        try:
+            log.debug(
+                "removing role %s from %s in guild %s", role.name, member, guild.name
+            )
+            await member.remove_roles(role, reason=reason)
         except discord.Forbidden:
             return False
         else:
@@ -197,7 +270,7 @@ class Moderator(Cog):
         if await self.kick_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Kicked **{user}** for reason: **{reason}**")
         else:
-            await ctx.send(f"Failed kicking **{user}**.")
+            await ctx.send(f"Failed kicking **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
 
     @commands.command(name="ban")
     @commands.has_permissions(ban_members=True)
@@ -213,7 +286,7 @@ class Moderator(Cog):
         if await self.ban_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Banned **{user}** for reason: **{reason}**")
         else:
-            await ctx.send(f"Failed banning **{user}**.")
+            await ctx.send(f"Failed banning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
 
     @commands.command(name="lock")
     @commands.has_permissions(manage_channels=True)
@@ -505,7 +578,7 @@ class Moderator(Cog):
             user=user, duration=duration.dt, reason=reason, guild=ctx.guild  # type: ignore
         ):
             await ctx.send(
-                f"Successfully timed out {user} for {discord.utils.format_dt(duration.dt, 'R')}."
+                f"Successfully timed out {user}. Timeout will remove **{discord.utils.format_dt(duration.dt, 'R')}**."
             )
 
     @commands.command(name="untimeout", aliases=["unmute"])
@@ -527,7 +600,53 @@ class Moderator(Cog):
         ):
             await ctx.send(f"Successfully removed timeout from {user}.")
 
+    @commands.group(name="add")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def add(self, ctx: Context) -> None:
+        """Add a role to a user."""
+
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @add.command(name="role")
+    async def add_role(
+        self,
+        ctx: Context,
+        user: MemberID,
+        role: RoleID,
+        *,
+        reason: Annotated[Optional[str], ActionReason],
+    ) -> None:
+        """Add a role to a user."""
+
+        if await self.add_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
+            await ctx.send(f"Successfully added {role} to {user}.")
+
+    @commands.group(name="remove")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
+    async def remove(self, ctx: Context) -> None:
+        """Remove a role from a user."""
+
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
+
+    @remove.command(name="role")
+    async def remove_role(
+        self,
+        ctx: Context,
+        user: MemberID,
+        role: RoleID,
+        *,
+        reason: Annotated[Optional[str], ActionReason],
+    ) -> None:
+        """Remove a role from a user."""
+
+        if await self.remove_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
+            await ctx.send(f"Successfully removed {role} from {user}.")
+
 
 async def setup(bot: Bot) -> None:
     log.info("Loading Moderator cog...")
-    await bot.add_cog(Moderator(bot))
+    await bot.add_cog(Mod(bot))

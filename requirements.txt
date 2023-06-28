@@ -6,3 +6,4 @@ colorama
 python-dateutil
 parsedatetime
 typing_extensions
+pillow
