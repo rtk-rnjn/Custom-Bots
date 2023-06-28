@@ -7,9 +7,10 @@ import os
 
 import aiohttp
 from discord.utils import setup_logging
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from core import Bot
-from utils import Config, CustomFormatter, bots
+from utils import ENV, Config, CustomFormatter, bots
 
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -50,6 +51,8 @@ async def main():
             continue
 
         bot = Bot(config)
+        setattr(bot, "mongo", AsyncIOMotorClient(ENV["MONGO_URI"]))
+        bot.init_db()
 
         tasks.append(
             loop.create_task(

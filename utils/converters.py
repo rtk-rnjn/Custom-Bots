@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "can_execute_action",
+    "convert_bool",
     "MemberID",
     "RoleID",
     "BannedMember",
@@ -29,6 +30,44 @@ def can_execute_action(
         or user == ctx.guild.owner  # type: ignore # guild can not be None and owner can not be None
         or user.top_role > target.top_role
     )
+
+
+def convert_bool(entiry: str) -> bool | None:
+    yes = {
+        "yes",
+        "y",
+        "true",
+        "t",
+        "1",
+        "enable",
+        "on",
+        "active",
+        "activated",
+        "ok",
+        "accept",
+        "agree",
+    }
+    no = {
+        "no",
+        "n",
+        "false",
+        "f",
+        "0",
+        "disable",
+        "off",
+        "deactive",
+        "deactivated",
+        "cancel",
+        "deny",
+        "disagree",
+    }
+
+    if entiry.lower() in yes:
+        return True
+    elif entiry.lower() in no:
+        return False
+
+    return None
 
 
 class MemberID(commands.Converter):

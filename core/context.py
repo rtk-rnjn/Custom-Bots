@@ -10,3 +10,8 @@ class Context(commands.Context[commands.Bot]):
         from .bot import Bot
 
     bot: Bot
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.config = self.bot.main_db.configs

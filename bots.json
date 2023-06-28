@@ -4,7 +4,9 @@
         "cogs.meta",
         "cogs.mod",
         "cogs.misc",
-        "cogs.owner"
+        "cogs.owner",
+        "cogs.giveaway",
+        "cogs.custom_events"
     ],
     "bots": [
         {
@@ -15,7 +17,9 @@
             "activity": "watching",
             "media": "WATCHING GNRZ ESPORTS",
             "owner_id": 873396664516349953,
-            "cogs": ["~"]
+            "cogs": [
+                "~"
+            ]
         }
     ]
 }
