@@ -41,3 +41,7 @@ class Owner(Cog):
         )
         log.info("presence changed to %s %s", ctx.invoked_with, media)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+
+
+async def setup(bot: Bot) -> None:
+    await bot.add_cog(Owner(bot))

@@ -10,8 +10,6 @@ from typing import Any
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord.ext import commands
-from discord.ext.commands import errors
-from discord.ext.commands.context import Context
 from discord.message import Message
 
 from utils import Config, CustomFormatter, all_cogs
@@ -23,17 +21,7 @@ os.environ["JISHAKU_NO_UNDERSCORE"] = "True"
 os.environ["JISHAKU_NO_DM_TRACEBACK"] = "True"
 os.environ["JISHAKU_FORCE_PAGINATOR"] = "True"
 
-discord.utils.setup_logging(
-    formatter=CustomFormatter(),
-    handler=logging.handlers.RotatingFileHandler(
-        filename=".log",
-        encoding="utf-8",
-        maxBytes=1 * 1024 * 1024,  # 1 MiB
-        backupCount=1,  # Rotate through 1 files
-    ),
-)
-
-logger = logging.getLogger()
+logger = logging.getLogger("bot")
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(CustomFormatter())
@@ -69,12 +57,15 @@ class Bot(commands.Bot):
             try:
                 await self.load_extension(cog)
             except commands.ExtensionNotFound:
-                print(f"Extension {cog} not found. Skipping.")
+                logger.warning("extension %s not found. Skipping.", cog)
             except commands.ExtensionFailed as e:
-                print(f"Extension {cog} failed to load. Skipping.")
-                print(e)
+                logger.warning("extension %s failed to load: %s", cog, e, exc_info=True)
+            except commands.NoEntryPointError:
+                logger.warning("extension %s has no setup function. Skipping.", cog)
+            except commands.ExtensionAlreadyLoaded:
+                logger.warning("extension %s is already loaded. Skipping.", cog)
             else:
-                print(f"Loaded extension {cog}.")
+                logger.info("extension %s loaded", cog)
 
     async def on_ready(self) -> None:
         if not hasattr(self, "uptime"):
@@ -82,7 +73,7 @@ class Bot(commands.Bot):
 
         bot_id = getattr(self.user, "id", None)
 
-        print(f"Logged in as {self.user} ({bot_id})")
+        logger.info("Logged in as %s", self.user)
 
     async def get_or_fetch_member(
         self,
@@ -239,3 +230,5 @@ class Bot(commands.Bot):
         if isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)  # type: ignore
             return await ctx.send(f"Invalid argument: {error}")
+
+        # return await ctx.send(f"Error: {error}")

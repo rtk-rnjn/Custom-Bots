@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import logging.handlers
 import os
 
 import aiohttp
+from discord.utils import setup_logging
 
 from core import Bot
-from utils import Config, bots
+from utils import Config, CustomFormatter, bots
 
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -24,6 +27,17 @@ async def run(bot: Bot, config: Config):
         async with bot:
             setattr(bot, "session", session)
             await bot.start(config.token)
+
+
+setup_logging(
+    formatter=CustomFormatter(),
+    handler=logging.handlers.RotatingFileHandler(
+        filename=".log",
+        encoding="utf-8",
+        maxBytes=1 * 1024 * 1024,  # 1 MiB
+        backupCount=1,  # Rotate through 1 files
+    ),
+)
 
 
 async def main():
