@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import discord
 from discord.ext import commands
-
+import logging
 from core import Bot, Cog, Context
 
+log = logging.getLogger("meta")
 
 class Meta(Cog):
     def __init__(self, bot: Bot) -> None:
@@ -24,4 +25,5 @@ class Meta(Cog):
 
 
 async def setup(bot: Bot) -> None:
+    log.info("Loading Meta cog...")
     await bot.add_cog(Meta(bot))

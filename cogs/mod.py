@@ -526,3 +526,8 @@ class Moderator(Cog):
             user=user, reason=reason, guild=ctx.guild  # type: ignore
         ):
             await ctx.send(f"Successfully removed timeout from {user}.")
+
+
+async def setup(bot: Bot) -> None:
+    log.info("Loading Moderator cog...")
+    await bot.add_cog(Moderator(bot))

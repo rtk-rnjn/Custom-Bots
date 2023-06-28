@@ -5,3 +5,4 @@ uvloop
 colorama
 python-dateutil
 parsedatetime
+typing_extensions

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import datetime
+import logging
 import logging.handlers
 import os
+from collections import Counter
 from typing import Any
 
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 from discord.ext import commands
+from discord.ext.commands import errors
+from discord.ext.commands.context import Context
 from discord.message import Message
 
 from utils import Config, CustomFormatter, all_cogs
@@ -28,6 +33,12 @@ discord.utils.setup_logging(
     ),
 )
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(CustomFormatter())
+logger.addHandler(handler)
+
 
 class Bot(commands.Bot):
     def __init__(self, config: Config, *args, **kwargs):
@@ -42,6 +53,11 @@ class Bot(commands.Bot):
         )
         self.cogs_to_load = config.cogs
         self.session = None
+
+        self.spam_control: "commands.CooldownMapping" = (
+            commands.CooldownMapping.from_cooldown(3, 5, commands.BucketType.user)
+        )
+        self._auto_spam_count: "Counter[int]" = Counter()
 
     async def setup_hook(self) -> None:
         await self.load_extension("jishaku")
@@ -140,4 +156,88 @@ class Bot(commands.Bot):
 
     async def process_commands(self, message: Message) -> None:
         ctx: Context = await self.get_context(message, cls=Context)
+
+        if bucket := self.spam_control.get_bucket(message):
+            if bucket.update_rate_limit(message.created_at.timestamp()):
+                self._auto_spam_count[message.author.id] += 1
+                if self._auto_spam_count[message.author.id] >= 3:
+                    logger.debug(
+                        "Auto spam detected, ignoring command. Context %s", ctx
+                    )
+                    return
+            else:
+                self._auto_spam_count.pop(message.author.id, None)
         await self.invoke(ctx)
+
+    # TODO: Add timers
+
+    async def on_command_error(self, ctx: Context, error: commands.CommandError):
+        await self.wait_until_ready()
+
+        if hasattr(ctx.command, "on_error"):
+            return
+
+        # get the original exception
+        error = getattr(error, "original", error)
+
+        ignore = (
+            commands.CommandNotFound,
+            discord.NotFound,
+            discord.Forbidden,
+            commands.PrivateMessageOnly,
+            commands.NotOwner,
+        )
+
+        if isinstance(error, ignore):
+            return
+
+        if isinstance(error, commands.BotMissingPermissions):
+            missing = [
+                perm.replace("_", " ").replace("guild", "server").title()
+                for perm in error.missing_permissions
+            ]
+            if len(missing) > 2:
+                fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
+            else:
+                fmt = " and ".join(missing)
+            return await ctx.send(f"Bot is missing permissions: `{fmt}`")
+
+        if isinstance(error, commands.MissingPermissions):
+            missing = [
+                perm.replace("_", " ").replace("guild", "server").title()
+                for perm in error.missing_permissions
+            ]
+            if len(missing) > 2:
+                fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
+            else:
+                fmt = " and ".join(missing)
+            return await ctx.send(
+                f"You need the following permission(s) to the run the command: `{fmt}`"
+            )
+
+        if isinstance(error, commands.CommandOnCooldown):
+            now = discord.utils.utcnow() + datetime.timedelta(seconds=error.retry_after)
+            discord_time = discord.utils.format_dt(now, "R")
+            return await ctx.send(
+                f"This command is on cooldown. Try again in {discord_time}"
+            )
+
+        if isinstance(
+            error,
+            (
+                commands.MissingRequiredArgument,
+                commands.BadUnionArgument,
+                commands.TooManyArguments,
+            ),
+        ):
+            ctx.command.reset_cooldown(ctx)  # type: ignore
+            return await ctx.send(
+                f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info."
+            )
+
+        if isinstance(error, commands.BadArgument):
+            ctx.command.reset_cooldown(ctx)  # type: ignore
+            await ctx.send(f"Invalid argument: {error}")
+            return await ctx.send(
+                f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info."
+            )
