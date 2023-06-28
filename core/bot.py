@@ -32,7 +32,7 @@ discord.utils.setup_logging(
 class Bot(commands.Bot):
     def __init__(self, config: Config, *args, **kwargs):
         super().__init__(
-            command_prefix=config.prefix,
+            command_prefix=commands.when_mentioned_or(config.prefix),
             intents=discord.Intents.all(),
             case_insensitive=True,
             strip_after_prefix=True,

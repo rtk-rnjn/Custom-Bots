@@ -3,12 +3,13 @@ from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
-from typing import Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import discord
 from discord.ext import commands
 
-from core import Context
+if TYPE_CHECKING:
+    from core import Context
 
 __all__ = (
     "can_execute_action",
