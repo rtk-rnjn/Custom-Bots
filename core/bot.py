@@ -125,7 +125,7 @@ class Bot(commands.Bot):
         return members[0] if members else None
 
     async def getch(self, get_function, fetch_function, entity) -> Any:
-        entity = await get_function(entity)
+        entity = get_function(entity)
         if entity is not None:
             return entity
 

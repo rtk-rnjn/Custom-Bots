@@ -60,7 +60,7 @@ class EventCustom(Cog):
 
     @Cog.listener("on_giveaway_timer_complete")
     async def extra_parser_giveaway(self, **kw: Any) -> None:
-        log.info("parsing giveaway... %s", kw)
+        log.info("parsing giveaway...")
         extra = kw.get("extra")
         if not extra:
             return
