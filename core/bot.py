@@ -377,12 +377,17 @@ class Bot(commands.Bot):
             pass
 
         try:
-            msg = await channel.fetch_message(message_id)
-            self.message_cache[message_id] = msg
+            async for msg in channel.history(
+                limit=1,
+                before=discord.Object(message_id + 1),
+                after=discord.Object(message_id - 1),
+            ):
+                self.message_cache[msg.id] = msg
+                return msg
+        except discord.Forbidden:
+            return None
         except discord.HTTPException:
             return None
 
     async def on_error(self, event: str, *args, **kwargs) -> None:
-        logger.error(
-            "Error in event %s. Args %s. Kwargs %s", event, args, kwargs, exc_info=True
-        )
+        logger.error("Error in event %s.", event, exc_info=True)

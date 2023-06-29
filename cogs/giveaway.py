@@ -237,6 +237,7 @@ class Giveaway(Cog):
             "required_guild": required_guild,
             "required_level": required_level,
         }
+
         return {
             "message": message,
             "created_at": message.created_at.timestamp(),
@@ -253,7 +254,6 @@ class Giveaway(Cog):
             "winners": winners,
             "prize": prize,
             "required_role": None,
-            "required_level": None,
             "required_guild": None,
         }
 
