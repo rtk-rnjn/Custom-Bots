@@ -370,3 +370,8 @@ class Bot(commands.Bot):
             self.message_cache[message_id] = msg
         except discord.HTTPException:
             return None
+
+    async def on_error(self, event: str, *args, **kwargs) -> None:
+        logger.error(
+            "Error in event %s. Args %s. Kwargs %s", event, args, kwargs, exc_info=True
+        )
