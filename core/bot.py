@@ -87,12 +87,18 @@ class Bot(commands.Bot):
                 logger.info("extension %s loaded", cog)
 
     async def on_ready(self) -> None:
+        if self._was_ready:
+            return
+
+        self._was_ready = True
+
         if not hasattr(self, "uptime"):
             self.uptime = discord.utils.utcnow()
 
         getattr(self.user, "id", None)
 
         logger.info("Logged in as %s", self.user)
+        self.timer_task = self.loop.create_task(self.dispatch_timers())
 
     async def get_or_fetch_member(
         self,
