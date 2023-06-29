@@ -10,11 +10,9 @@ from core import Bot, Cog
 if TYPE_CHECKING:
     from cogs.giveaway import Giveaway
 
+import logging
 
-class FakeMessage:
-    def __init__(self, **kwargs: Any):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+log = logging.getLogger("custom_events")
 
 
 class EventCustom(Cog):
@@ -62,6 +60,7 @@ class EventCustom(Cog):
 
     @Cog.listener("on_giveaway_timer_complete")
     async def extra_parser_giveaway(self, **kw: Any) -> None:
+        log.info("parsing giveaway... %s", kw)
         extra = kw.get("extra")
         if not extra:
             return

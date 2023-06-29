@@ -55,7 +55,7 @@ class Bot(commands.Bot):
         self._was_ready: bool = False
         self.lock: "asyncio.Lock" = asyncio.Lock()
         self.timer_task: asyncio.Task | None = None
-        self._current_timer: dict | None = {}
+        self._current_timer: dict[str, Any] | None = {}
         self._have_data: asyncio.Event = asyncio.Event()
         self.reminder_event: asyncio.Event = asyncio.Event()
 
@@ -219,23 +219,27 @@ class Bot(commands.Bot):
 
     async def get_active_timer(self, **filters: Any) -> dict:
         return await self.timers.find_one(
-            {**filters}, sort=[("expires_at", pymongo.ASCENDING)]
+            filters, sort=[("expires_at", pymongo.ASCENDING)]
         )
 
     async def wait_for_active_timers(self, **filters: Any) -> dict:
         timers = await self.get_active_timer(**filters)
+        logger.info("received timers: %s", timers)
+
         if timers:
             self._have_data.set()
             return timers
 
         self._have_data.clear()
         self._current_timer = None
+        logger.info("waiting for timers")
         await self._have_data.wait()
 
         return await self.get_active_timer()
 
     async def dispatch_timers(self):
         try:
+            logger.info("Starting timer dispatch")
             while not self.is_closed():
                 timers = self._current_timer = await self.wait_for_active_timers(bot_id=self.user.id)  # type: ignore
 
@@ -249,7 +253,8 @@ class Bot(commands.Bot):
 
                 await self.call_timer(self.timers, **timers)
                 await asyncio.sleep(0)
-        except (OSError, discord.ConnectionClosed, ConnectionFailure):
+        except (OSError, discord.ConnectionClosed, ConnectionFailure) as e:
+            logger.error("Error dispatching timer", exc_info=True)
             if self.timer_task:
                 self.timer_task.cancel()
                 self.timer_task = self.loop.create_task(self.dispatch_timers())
