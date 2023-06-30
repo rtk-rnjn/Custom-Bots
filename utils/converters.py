@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 import discord
 from discord.ext import commands
@@ -15,6 +15,7 @@ __all__ = (
     "can_execute_action",
     "convert_bool",
     "MemberID",
+    "MessageID",
     "RoleID",
     "BannedMember",
     "ActionReason",
@@ -25,11 +26,21 @@ __all__ = (
 def can_execute_action(
     ctx: Context, user: discord.Member, target: discord.Member
 ) -> bool:
-    return (
-        user.id in ctx.bot.owner_ids  # type: ignore # owner_ids can not be None
-        or user == ctx.guild.owner  # type: ignore # guild can not be None and owner can not be None
-        or user.top_role > target.top_role
-    )
+    assert ctx.guild
+
+    if ctx.author == ctx.guild.owner:
+        return True
+
+    if user == ctx.guild.owner:
+        return False
+
+    if user == target:
+        return False
+
+    if user.top_role == target.top_role:
+        return False
+
+    return user.top_role >= target.top_role
 
 
 def convert_bool(entiry: str) -> bool | None:
@@ -73,11 +84,11 @@ def convert_bool(entiry: str) -> bool | None:
 class MemberID(commands.Converter):
     """A converter that handles user mentions and user IDs."""
 
-    async def convert(self, ctx: Context, argument: str) -> Optional[discord.Member]:
+    async def convert(self, ctx: Context, argument: str) -> discord.Member | None:
         """Convert a user mention or ID to a member object."""
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         try:
-            m: Optional[discord.Member] = await commands.MemberConverter().convert(  # type: ignore
+            m: discord.Member | None = await commands.MemberConverter().convert(  # type: ignore
                 ctx, argument
             )
         except commands.BadArgument:
@@ -88,9 +99,9 @@ class MemberID(commands.Converter):
                     f"{argument} is not a valid member or member ID."
                 ) from None
             else:
-                m: Optional[
-                    Union[discord.Member, discord.User]
-                ] = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
+                m: discord.Member | discord.User | None = (
+                    await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
+                )
                 if m is None:
                     # hackban case
                     return type(  # type: ignore
@@ -106,11 +117,36 @@ class MemberID(commands.Converter):
         return m  # type: ignore
 
 
+class MessageID(commands.Converter):
+    async def convert(self, ctx: Context, argument: str) -> discord.Message | None:
+        assert ctx.guild is not None
+        try:
+            message_id = int(argument, base=10)
+        except ValueError:
+            raise commands.BadArgument(
+                f"{argument} is not a valid message or message ID."
+            ) from None
+        else:
+            message: discord.Message | None = discord.utils.get(  # type: ignore
+                ctx.bot.cached_messages, id=message_id
+            )
+            if message is None:
+                try:
+                    message: discord.Message | None = (
+                        await ctx.bot.get_or_fetch_message(ctx.channel, message_id)
+                    )
+                except discord.NotFound:
+                    raise commands.BadArgument(
+                        f"{argument} is not a valid message or message ID."
+                    ) from None
+            return message
+
+
 class RoleID(commands.Converter):
-    async def convert(self, ctx: Context, argument: str) -> Optional[discord.Role]:
+    async def convert(self, ctx: Context, argument: str) -> discord.Role | None:
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         try:
-            role: Optional[discord.Role] = await commands.RoleConverter().convert(
+            role: discord.Role | None = await commands.RoleConverter().convert(
                 ctx, argument
             )
         except commands.BadArgument:
@@ -121,7 +157,7 @@ class RoleID(commands.Converter):
                     f"{argument} is not a valid role or role ID."
                 ) from None
             else:
-                role: Optional[discord.Role] = discord.utils.get(
+                role: discord.Role | None = discord.utils.get(
                     ctx.guild.roles, id=role_id
                 )
                 if role is None:
@@ -133,7 +169,7 @@ class RoleID(commands.Converter):
 class BannedMember(commands.Converter):
     """A coverter that is used for fetching Banned Member of Guild"""
 
-    async def convert(self, ctx: Context, argument: str) -> Optional[discord.User]:
+    async def convert(self, ctx: Context, argument: str) -> discord.User | None:
         assert ctx.guild is not None
 
         if argument.isdigit():
@@ -160,7 +196,7 @@ class BannedMember(commands.Converter):
 class ActionReason(commands.Converter):
     """Action reason converter"""
 
-    async def convert(self, ctx: Context, argument: Optional[str] = None) -> str:
+    async def convert(self, ctx: Context, argument: str | None = None) -> str:
         """Convert the argument to a action string"""
         ret = f"{ctx.author} ({ctx.author.id}) -> {argument or 'no reason provided'}"
 
@@ -174,7 +210,7 @@ class ActionReason(commands.Converter):
 class ToAsync:
     """Converts a blocking function to an async function"""
 
-    def __init__(self, *, executor: Optional[ThreadPoolExecutor] = None) -> None:
+    def __init__(self, *, executor: ThreadPoolExecutor | None = None) -> None:
         self.executor = executor or ThreadPoolExecutor()
 
     def __call__(self, blocking) -> Callable[..., Any]:

@@ -65,6 +65,17 @@ class Mod(Cog):
         else:
             return True
 
+    async def unban_method(
+        self, *, user: discord.User, guild: discord.Guild, reason: str
+    ) -> bool:
+        try:
+            log.debug("unbanning %s from guild %s", user, guild.name)
+            await guild.unban(user, reason=reason)
+        except discord.Forbidden:
+            return False
+        else:
+            return True
+
     async def lock_channel_method(
         self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str
     ) -> bool:

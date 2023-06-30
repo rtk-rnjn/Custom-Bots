@@ -63,9 +63,9 @@ class Bot(commands.Bot):
 
     def init_db(self) -> None:
         self.main_db = self.mongo["customBots"]  # type: ignore
-        self.bot_configs = self.main_db["botConfigs"]
         self.timers = self.main_db["timerCollections"]
         self.giveaways = self.main_db["giveawayCollections"]
+        self.ticket = self.main_db["ticketCollections"]
 
     async def setup_hook(self) -> None:
         await self.load_extension("jishaku")
@@ -369,7 +369,7 @@ class Bot(commands.Bot):
         return False
 
     async def get_or_fetch_message(
-        self, channel: discord.TextChannel, message_id: int
+        self, channel: discord.abc.Messageable, message_id: int
     ) -> discord.Message | None:
         try:
             return self.message_cache[message_id]

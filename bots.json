@@ -6,7 +6,8 @@
         "cogs.misc",
         "cogs.owner",
         "cogs.giveaway",
-        "cogs.custom_events"
+        "cogs.custom_events",
+        "cogs.ticket"
     ],
     "bots": [
         {
