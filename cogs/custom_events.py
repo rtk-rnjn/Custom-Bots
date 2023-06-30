@@ -37,9 +37,7 @@ class EventCustom(Cog):
             return
         if embed is None:
             embed = {}
-        embed: discord.utils.MISSING | discord.Embed = (
-            discord.Embed.from_dict(embed) if embed else discord.utils.MISSING
-        )
+        embed: discord.utils.MISSING | discord.Embed = discord.Embed.from_dict(embed) if embed else discord.utils.MISSING
 
         if (dm_notify or is_todo) and (user := self.bot.get_user(messageAuthor or 0)):
             with contextlib.suppress(discord.Forbidden):
@@ -95,9 +93,7 @@ class EventCustom(Cog):
 
         joiner = ">, <@".join([str(i) for i in member_ids])
 
-        await channel.send(
-            f"Congrats <@{joiner}> you won {kw.get('prize')}\n" f"> {msg_link}"
-        )
+        await channel.send(f"Congrats <@{joiner}> you won {kw.get('prize')}\n" f"> {msg_link}")
 
 
 async def setup(bot: Bot) -> None:

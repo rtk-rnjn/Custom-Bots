@@ -32,9 +32,7 @@ class Giveaway(Cog):
             return m.channel.id == ctx.channel.id and m.author.id == ctx.author.id
 
         try:
-            msg: discord.Message = await ctx.bot.wait_for(
-                "message", check=check, timeout=60
-            )
+            msg: discord.Message = await ctx.bot.wait_for("message", check=check, timeout=60)
         except asyncio.TimeoutError:
             raise commands.BadArgument("You took too long to respond")
         else:
@@ -57,9 +55,7 @@ class Giveaway(Cog):
         for index, question in enumerate(quest, start=1):
             await ctx.reply(embed=discord.Embed(description=question))
             if index == 1:
-                channel = await commands.TextChannelConverter().convert(
-                    ctx, argument=(await self.__wait_for__message(ctx))
-                )
+                channel = await commands.TextChannelConverter().convert(ctx, argument=(await self.__wait_for__message(ctx)))
                 CHANNEL = channel
                 payload["giveaway_channel"] = channel.id
 
@@ -72,9 +68,7 @@ class Giveaway(Cog):
                 payload["prize"] = prize
 
             elif index == 4:
-                winners = self.__is_int(
-                    await self.__wait_for__message(ctx), "Winner must be a whole number"
-                )
+                winners = self.__is_int(await self.__wait_for__message(ctx), "Winner must be a whole number")
                 payload["winners"] = winners
 
             elif index == 5:
@@ -103,27 +97,19 @@ class Giveaway(Cog):
             f"> Hosted by: {ctx.author.mention} (`{ctx.author.id}`)\n"
             f"> Ends: **<t:{int(payload['endtime'])}:R>**\n"
         )
-        embed.set_footer(
-            text=f"ID: {ctx.message.id}", icon_url=ctx.author.display_avatar.url
-        )
+        embed.set_footer(text=f"ID: {ctx.message.id}", icon_url=ctx.author.display_avatar.url)
         CHANNEL = CHANNEL or ctx.channel
         msg = await CHANNEL.send(embed=embed)
         await msg.add_reaction("\N{PARTY POPPER}")
         ctx.bot.message_cache[msg.id] = msg
-        main_post = await self._create_giveaway_post(  # type: ignore
-            message=msg, **payload
-        )  # flake8: noqa
+        main_post = await self._create_giveaway_post(message=msg, **payload)  # type: ignore  # flake8: noqa
 
-        await ctx.bot.giveaways.insert_one(
-            {**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"}
-        )
+        await ctx.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
         await ctx.reply(embed=discord.Embed(description="Giveaway has been created!"))
         return main_post
 
     async def end_giveaway(self, bot: Bot, **kw: Any) -> list[int]:
-        channel: discord.TextChannel = await bot.getch(
-            bot.get_channel, bot.fetch_channel, kw.get("giveaway_channel")
-        )
+        channel: discord.TextChannel = await bot.getch(bot.get_channel, bot.fetch_channel, kw.get("giveaway_channel"))
 
         msg: discord.Message = await bot.get_or_fetch_message(channel, kw["message_id"])  # type: ignore
         await bot.delete_timer(_id=kw["message_id"])
@@ -173,13 +159,9 @@ class Giveaway(Cog):
             await asyncio.sleep(0)
 
     @staticmethod
-    async def __update_giveaway_reactors(
-        *, bot: Bot, reactors: list[int], message_id: int
-    ) -> None:
+    async def __update_giveaway_reactors(*, bot: Bot, reactors: list[int], message_id: int) -> None:
         collection = bot.giveaways
-        await collection.update_one(
-            {"message_id": message_id}, {"$set": {"reactors": reactors}}
-        )
+        await collection.update_one({"message_id": message_id}, {"$set": {"reactors": reactors}})
 
     @staticmethod
     async def __check_requirements(bot: Bot, **kw: Any) -> list[int]:
@@ -193,9 +175,7 @@ class Giveaway(Cog):
         for member in kw.get("winners", []):
             member = await bot.get_or_fetch_member(current_guild, member)
             if required_guild:
-                is_member_none = await bot.get_or_fetch_member(
-                    required_guild, member.id  # type: ignore
-                )
+                is_member_none = await bot.get_or_fetch_member(required_guild, member.id)  # type: ignore
                 if is_member_none is None:
                     Giveaway.__item__remove(real_winners, member)
 
@@ -245,9 +225,7 @@ class Giveaway(Cog):
             "extra": {"name": "GIVEAWAY_END", "main": post_extra},
         }
 
-    async def make_giveaway_drop(
-        self, ctx: Context, *, duration: ShortTime, winners: int, prize: str
-    ):
+    async def make_giveaway_drop(self, ctx: Context, *, duration: ShortTime, winners: int, prize: str):
         payload = {
             "giveaway_channel": ctx.channel.id,
             "endtime": duration.dt.timestamp(),
@@ -269,18 +247,12 @@ class Giveaway(Cog):
             f"> Ends: **<t:{int(payload['endtime'])}:R>**\n"
         )
 
-        embed.set_footer(
-            text=f"ID: {ctx.message.id}", icon_url=ctx.author.display_avatar.url
-        )
+        embed.set_footer(text=f"ID: {ctx.message.id}", icon_url=ctx.author.display_avatar.url)
         msg: discord.Message = await ctx.send(embed=embed)
         await msg.add_reaction("\N{PARTY POPPER}")
-        main_post = await self._create_giveaway_post(
-            message=msg, **payload
-        )  # flake8: noqa
+        main_post = await self._create_giveaway_post(message=msg, **payload)  # flake8: noqa
 
-        await ctx.bot.giveaways.insert_one(
-            {**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"}
-        )
+        await ctx.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
         return main_post
 
     @commands.command(name="gstart", aliases=["giveaway"])
@@ -329,9 +301,7 @@ class Giveaway(Cog):
         """Delete a giveaway
 
         This command will delete a giveaway."""
-        if data := await self.bot.giveaways.find_one_and_delete(
-            {"message_id": message, "status": "ONGOING"}
-        ):
+        if data := await self.bot.giveaways.find_one_and_delete({"message_id": message, "status": "ONGOING"}):
             await ctx.send("Giveaway deleted")
             await self.bot.delete_timer(_id=message)
         else:
@@ -349,9 +319,7 @@ class Giveaway(Cog):
         """Drop a giveaway
 
         This command will drop a giveaway. A quick way to start a giveaway."""
-        post = await self.make_giveaway_drop(
-            ctx, duration=duration, winners=winners, prize=prize
-        )
+        post = await self.make_giveaway_drop(ctx, duration=duration, winners=winners, prize=prize)
         await self.bot.create_timer(_event_name="giveaway", **post)
 
 

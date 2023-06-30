@@ -50,17 +50,13 @@ class Ticket(Cog):
 
     async def cog_load(self):
         BOT_ID = self.bot.user.id  # type: ignore
-        self._ticket_cache = (
-            await self.ticket_collection.find_one({"_id": f"ticket_{BOT_ID}"}) or {}
-        )
+        self._ticket_cache = await self.ticket_collection.find_one({"_id": f"ticket_{BOT_ID}"}) or {}
 
         self._ticket_cache = {**self.DEFAULT_PAYLOAD, **self._ticket_cache}
 
     async def cog_unload(self):
         BOT_ID = self.bot.user.id  # type: ignore
-        await self.ticket_collection.update_one(
-            {"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache}
-        )
+        await self.ticket_collection.update_one({"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache})
 
     async def create_ticket(self, guild: discord.Guild, user: discord.Member) -> None:
         category_channel = self._ticket_cache["ticket_category_channel"]
@@ -78,15 +74,9 @@ class Ticket(Cog):
             topic="Ticket",
             overwrites={
                 guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                guild.me: discord.PermissionOverwrite(
-                    read_messages=True, send_messages=True
-                ),
-                user: discord.PermissionOverwrite(
-                    read_messages=True, send_messages=True
-                ),
-                role: discord.PermissionOverwrite(
-                    read_messages=True, send_messages=True
-                ),
+                guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+                user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+                role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
             },
         )
         data = {
@@ -136,9 +126,7 @@ class Ticket(Cog):
             await ctx.reply(f"{ctx.author.mention} you already have an active ticket.")
             return
 
-        assert isinstance(ctx.guild, discord.Guild) and isinstance(
-            ctx.author, discord.Member
-        )
+        assert isinstance(ctx.guild, discord.Guild) and isinstance(ctx.author, discord.Member)
 
         await self.create_ticket(ctx.guild, ctx.author)
 
@@ -147,11 +135,7 @@ class Ticket(Cog):
         """Close a ticket"""
         active_tickets = self._ticket_cache["active_tickets"]
         ticket = next(
-            (
-                ticket
-                for ticket in active_tickets
-                if ticket["ticket_owner"] == ctx.author.id
-            ),
+            (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
             None,
         )
 
@@ -169,11 +153,7 @@ class Ticket(Cog):
         """Add a member to your ticket"""
         active_tickets = self._ticket_cache["active_tickets"]
         ticket = next(
-            (
-                ticket
-                for ticket in active_tickets
-                if ticket["ticket_owner"] == ctx.author.id
-            ),
+            (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
             None,
         )
 
@@ -196,9 +176,9 @@ class Ticket(Cog):
             reason=f"Added by {ctx.author} ({ctx.author.id})",
         )
 
-        self._ticket_cache["active_tickets"][
-            self._ticket_cache["active_tickets"].index(ticket)
-        ]["ticket_members"].append(member.id)
+        self._ticket_cache["active_tickets"][self._ticket_cache["active_tickets"].index(ticket)]["ticket_members"].append(
+            member.id
+        )
 
         await ticket_channel.send(f"{member.mention} added to the ticket.")
 
@@ -207,11 +187,7 @@ class Ticket(Cog):
         """Remove a member from your ticket"""
         active_tickets = self._ticket_cache["active_tickets"]
         ticket = next(
-            (
-                ticket
-                for ticket in active_tickets
-                if ticket["ticket_owner"] == ctx.author.id
-            ),
+            (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
             None,
         )
 
@@ -234,9 +210,9 @@ class Ticket(Cog):
             reason=f"Removed by {ctx.author} ({ctx.author.id})",
         )
 
-        self._ticket_cache["active_tickets"][
-            self._ticket_cache["active_tickets"].index(ticket)
-        ]["ticket_members"].remove(member.id)
+        self._ticket_cache["active_tickets"][self._ticket_cache["active_tickets"].index(ticket)]["ticket_members"].remove(
+            member.id
+        )
 
         await ticket_channel.send(f"{member.mention} removed from the ticket.")
 
@@ -245,9 +221,7 @@ class Ticket(Cog):
         pass
 
     @ticket_setup.command(name="pingrole", aliases=["ping"])
-    async def ticket_setup_pingrole(
-        self, ctx: Context, *, role: Optional[RoleID] = None
-    ) -> None:
+    async def ticket_setup_pingrole(self, ctx: Context, *, role: Optional[RoleID] = None) -> None:
         """Set the ping role for tickets"""
         if role is None:
             self._ticket_cache["ticket_ping_role"] = None
@@ -258,9 +232,7 @@ class Ticket(Cog):
         await ctx.reply(f"Ticket ping role set to {role.mention}.")  # type: ignore
 
     @ticket_setup.command(name="category", aliases=["cat"])
-    async def ticket_setup_category(
-        self, ctx: Context, *, category: Optional[discord.CategoryChannel] = None
-    ) -> None:
+    async def ticket_setup_category(self, ctx: Context, *, category: Optional[discord.CategoryChannel] = None) -> None:
         """Set the ticket category"""
         if category is None:
             self._ticket_cache["ticket_category_channel"] = None
@@ -271,15 +243,11 @@ class Ticket(Cog):
         await ctx.reply(f"Ticket category set to {category.mention}.")
 
     @ticket_setup.command(name="message", aliases=["msg"])
-    async def ticket_setup_message(
-        self, ctx: Context, *, message: Optional[MessageID] = None
-    ) -> None:
+    async def ticket_setup_message(self, ctx: Context, *, message: Optional[MessageID] = None) -> None:
         pass
 
     @ticket_setup.command(name="logchannel", aliases=["log"])
-    async def ticket_setup_logchannel(
-        self, ctx: Context, *, channel: Optional[discord.TextChannel] = None
-    ) -> None:
+    async def ticket_setup_logchannel(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:
         """Set the ticket log channel"""
         if channel is None:
             self._ticket_cache["ticket_log_channel"] = None

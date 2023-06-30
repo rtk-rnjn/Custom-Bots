@@ -19,20 +19,14 @@ class EmbedSend(discord.ui.Button):
 
     def __init__(self, channel: discord.TextChannel):
         self.channel = channel
-        super().__init__(
-            label="Send to #{0}".format(channel.name), style=discord.ButtonStyle.green
-        )
+        super().__init__(label="Send to #{0}".format(channel.name), style=discord.ButtonStyle.green)
 
     async def callback(self, interaction: discord.Interaction) -> T.Any:
         try:
-            m: T.Optional[discord.Message] = await self.channel.send(
-                embed=self.view.embed
-            )
+            m: T.Optional[discord.Message] = await self.channel.send(embed=self.view.embed)
 
         except Exception as e:
-            await interaction.response.send_message(
-                f"An error occured: {e}", ephemeral=True
-            )
+            await interaction.response.send_message(f"An error occured: {e}", ephemeral=True)
 
         else:
             await interaction.response.send_message(
@@ -49,9 +43,7 @@ class EmbedCancel(discord.ui.Button["EmbedBuilder"]):
     async def callback(self, interaction: discord.Interaction) -> T.Any:
         assert self.view is not None
 
-        await interaction.response.send_message(
-            "\N{CROSS MARK} | Embed sending cancelled.", ephemeral=True
-        )
+        await interaction.response.send_message("\N{CROSS MARK} | Embed sending cancelled.", ephemeral=True)
         await self.view.on_timeout()
 
 
@@ -110,10 +102,7 @@ class BotView(discord.ui.View):
     async def on_timeout(self) -> None:
         if hasattr(self, "message"):
             for b in self.children:
-                if (
-                    isinstance(b, discord.ui.Button)
-                    and b.style != discord.ButtonStyle.link
-                ):
+                if isinstance(b, discord.ui.Button) and b.style != discord.ButtonStyle.link:
                     b.style, b.disabled = discord.ButtonStyle.grey, True
                 elif isinstance(b, discord.ui.Select):
                     b.disabled = True
@@ -121,9 +110,7 @@ class BotView(discord.ui.View):
                 await self.message.edit(view=self)
                 return
 
-    async def on_error(
-        self, interaction: discord.Interaction, error: Exception, item
-    ) -> None:
+    async def on_error(self, interaction: discord.Interaction, error: Exception, item) -> None:
         self.ctx.bot.dispatch("command_error", self.ctx, error)
 
 
@@ -226,9 +213,7 @@ class EmbedOptions(discord.ui.Select):
 
             self.view.embed.title = t or None
             self.view.embed.description = d or None
-            self.view.embed.set_footer(
-                text=f or None, icon_url=self.view.embed.footer.icon_url
-            )
+            self.view.embed.set_footer(text=f or None, icon_url=self.view.embed.footer.icon_url)
 
             await self.view.refresh_view()
 
@@ -290,14 +275,10 @@ class EmbedOptions(discord.ui.Select):
             url = str(modal.children[0]) or None
 
             if not url or not url.startswith("https"):
-                self.view.embed.set_footer(
-                    icon_url=None, text=self.view.embed.footer.text
-                )
+                self.view.embed.set_footer(icon_url=None, text=self.view.embed.footer.text)
 
             else:
-                self.view.embed.set_footer(
-                    icon_url=url, text=self.view.embed.footer.text
-                )
+                self.view.embed.set_footer(icon_url=url, text=self.view.embed.footer.text)
 
             await self.view.refresh_view()
 
@@ -318,9 +299,7 @@ class EmbedOptions(discord.ui.Select):
 
             with suppress(ValueError):
                 if c := str(modal.children[0]):
-                    color = int(
-                        str(await BotColor.convert(self.ctx, c)).replace("#", ""), 16
-                    )
+                    color = int(str(await BotColor.convert(self.ctx, c)).replace("#", ""), 16)
 
             self.view.embed.color = color
 
@@ -334,9 +313,7 @@ class EmbedBuilder(BotView):
         self.ctx = ctx
         self.add_item(EmbedOptions(self.ctx))
 
-        for _ in kwargs.get(
-            "items", []
-        ):  # to add extra buttons and handle this view externally
+        for _ in kwargs.get("items", []):  # to add extra buttons and handle this view externally
             self.add_item(_)
 
     @property
@@ -348,9 +325,7 @@ class EmbedBuilder(BotView):
             await to_del.delete(delay=0)
 
         with suppress(discord.HTTPException):
-            self.message = await self.message.edit(
-                content=self.content, embed=self.embed, view=self
-            )
+            self.message = await self.message.edit(content=self.content, embed=self.embed, view=self)
 
     async def rendor(self, **kwargs: T.Any):
         self.message: discord.Message = await self.ctx.send(
@@ -369,9 +344,7 @@ class EmbedBuilder(BotView):
             .set_thumbnail(
                 url="https://cdn.discordapp.com/attachments/853174868551532564/860464565338898472/embed_thumbnail.png"
             )
-            .set_image(
-                url="https://cdn.discordapp.com/attachments/853174868551532564/860462053063393280/embed_image.png"
-            )
+            .set_image(url="https://cdn.discordapp.com/attachments/853174868551532564/860462053063393280/embed_image.png")
             .set_footer(
                 text="Footer Message",
                 icon_url="https://media.discordapp.net/attachments/853174868551532564/860464989164535828/embed_footer.png",

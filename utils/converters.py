@@ -23,9 +23,7 @@ __all__ = (
 )
 
 
-def can_execute_action(
-    ctx: Context, user: discord.Member, target: discord.Member
-) -> bool:
+def can_execute_action(ctx: Context, user: discord.Member, target: discord.Member) -> bool:
     assert ctx.guild
 
     if ctx.author == ctx.guild.owner:
@@ -88,20 +86,14 @@ class MemberID(commands.Converter):
         """Convert a user mention or ID to a member object."""
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         try:
-            m: discord.Member | None = await commands.MemberConverter().convert(  # type: ignore
-                ctx, argument
-            )
+            m: discord.Member | None = await commands.MemberConverter().convert(ctx, argument)  # type: ignore
         except commands.BadArgument:
             try:
                 member_id = int(argument, base=10)
             except ValueError:
-                raise commands.BadArgument(
-                    f"{argument} is not a valid member or member ID."
-                ) from None
+                raise commands.BadArgument(f"{argument} is not a valid member or member ID.") from None
             else:
-                m: discord.Member | discord.User | None = (
-                    await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
-                )
+                m: discord.Member | discord.User | None = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
                 if m is None:
                     # hackban case
                     return type(  # type: ignore
@@ -123,22 +115,14 @@ class MessageID(commands.Converter):
         try:
             message_id = int(argument, base=10)
         except ValueError:
-            raise commands.BadArgument(
-                f"{argument} is not a valid message or message ID."
-            ) from None
+            raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
         else:
-            message: discord.Message | None = discord.utils.get(  # type: ignore
-                ctx.bot.cached_messages, id=message_id
-            )
+            message: discord.Message | None = discord.utils.get(ctx.bot.cached_messages, id=message_id)  # type: ignore
             if message is None:
                 try:
-                    message: discord.Message | None = (
-                        await ctx.bot.get_or_fetch_message(ctx.channel, message_id)
-                    )
+                    message: discord.Message | None = await ctx.bot.get_or_fetch_message(ctx.channel, message_id)
                 except discord.NotFound:
-                    raise commands.BadArgument(
-                        f"{argument} is not a valid message or message ID."
-                    ) from None
+                    raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
             return message
 
 
@@ -146,24 +130,16 @@ class RoleID(commands.Converter):
     async def convert(self, ctx: Context, argument: str) -> discord.Role | None:
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         try:
-            role: discord.Role | None = await commands.RoleConverter().convert(
-                ctx, argument
-            )
+            role: discord.Role | None = await commands.RoleConverter().convert(ctx, argument)
         except commands.BadArgument:
             try:
                 role_id = int(argument, base=10)
             except ValueError:
-                raise commands.BadArgument(
-                    f"{argument} is not a valid role or role ID."
-                ) from None
+                raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
             else:
-                role: discord.Role | None = discord.utils.get(
-                    ctx.guild.roles, id=role_id
-                )
+                role: discord.Role | None = discord.utils.get(ctx.guild.roles, id=role_id)
                 if role is None:
-                    raise commands.BadArgument(
-                        f"{argument} is not a valid role or role ID."
-                    ) from None
+                    raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
 
 
 class BannedMember(commands.Converter):
@@ -178,9 +154,7 @@ class BannedMember(commands.Converter):
                 ban_entry = await ctx.guild.fetch_ban(discord.Object(id=member_id))
                 return ban_entry.user
             except discord.NotFound:
-                raise commands.BadArgument(
-                    "User Not Found! Probably this member has not been banned before."
-                ) from None
+                raise commands.BadArgument("User Not Found! Probably this member has not been banned before.") from None
 
         async for entry in ctx.guild.bans():
             if argument in (entry.user.name, str(entry.user)):
@@ -188,9 +162,7 @@ class BannedMember(commands.Converter):
             if str(entry.user) == argument:
                 return entry.user
 
-        raise commands.BadArgument(
-            "User Not Found! Probably this member has not been banned before."
-        ) from None
+        raise commands.BadArgument("User Not Found! Probably this member has not been banned before.") from None
 
 
 class ActionReason(commands.Converter):
@@ -216,8 +188,6 @@ class ToAsync:
     def __call__(self, blocking) -> Callable[..., Any]:
         @wraps(blocking)
         async def wrapper(*args, **kwargs) -> Any:
-            return await asyncio.get_event_loop().run_in_executor(
-                self.executor, partial(blocking, *args, **kwargs)
-            )
+            return await asyncio.get_event_loop().run_in_executor(self.executor, partial(blocking, *args, **kwargs))
 
         return wrapper

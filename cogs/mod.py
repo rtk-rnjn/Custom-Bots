@@ -12,7 +12,7 @@ from discord.ext import commands
 from typing_extensions import Annotated
 
 from core import Bot, Cog, Context
-from utils import ActionReason, MemberID, RoleID, ShortTime
+from utils import ActionReason, BannedMember, MemberID, RoleID, ShortTime
 
 log = logging.getLogger("mod")
 
@@ -38,9 +38,7 @@ class Mod(Cog):
             raise commands.BadArgument("This command can only be used in a server.")
         return ctx.guild is not None
 
-    async def kick_method(
-        self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str
-    ) -> bool:
+    async def kick_method(self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str) -> bool:
         if member := guild.get_member(user.id):
             try:
                 log.debug("kicking %s from guild %s", member, guild.name)
@@ -50,13 +48,9 @@ class Mod(Cog):
             else:
                 return True
 
-        raise commands.BadArgument(
-            f"User `{user}` is not a member of guild `{guild.name}`"
-        )
+        raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
 
-    async def ban_method(
-        self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str
-    ) -> bool:
+    async def ban_method(self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str) -> bool:
         try:
             log.debug("banning %s from guild %s", user, guild.name)
             await guild.ban(user, reason=reason)
@@ -65,9 +59,7 @@ class Mod(Cog):
         else:
             return True
 
-    async def unban_method(
-        self, *, user: discord.User, guild: discord.Guild, reason: str
-    ) -> bool:
+    async def unban_method(self, *, user: discord.User, guild: discord.Guild, reason: str) -> bool:
         try:
             log.debug("unbanning %s from guild %s", user, guild.name)
             await guild.unban(user, reason=reason)
@@ -76,47 +68,35 @@ class Mod(Cog):
         else:
             return True
 
-    async def lock_channel_method(
-        self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str
-    ) -> bool:
+    async def lock_channel_method(self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str) -> bool:
         try:
             if isinstance(channel, discord.TextChannel):
                 overwrites = channel.overwrites_for(channel.guild.default_role)
                 overwrites.send_messages = False
                 log.debug("locking %s in guild %s", channel, channel.guild.name)
-                await channel.set_permissions(
-                    channel.guild.default_role, overwrite=overwrites, reason=reason
-                )
+                await channel.set_permissions(channel.guild.default_role, overwrite=overwrites, reason=reason)
             if isinstance(channel, discord.VoiceChannel):
                 overwrites = channel.overwrites_for(channel.guild.default_role)
                 overwrites.speak = False
                 log.debug("locking %s in guild %s", channel, channel.guild.name)
-                await channel.set_permissions(
-                    channel.guild.default_role, overwrite=overwrites, reason=reason
-                )
+                await channel.set_permissions(channel.guild.default_role, overwrite=overwrites, reason=reason)
         except discord.Forbidden:
             return False
         else:
             return True
 
-    async def unlock_channel_method(
-        self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str
-    ) -> bool:
+    async def unlock_channel_method(self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str) -> bool:
         try:
             if isinstance(channel, discord.TextChannel):
                 overwrites = channel.overwrites_for(channel.guild.default_role)
                 overwrites.send_messages = None
                 log.debug("unlocking %s in guild %s", channel, channel.guild.name)
-                await channel.set_permissions(
-                    channel.guild.default_role, overwrite=overwrites, reason=reason
-                )
+                await channel.set_permissions(channel.guild.default_role, overwrite=overwrites, reason=reason)
             if isinstance(channel, discord.VoiceChannel):
                 overwrites = channel.overwrites_for(channel.guild.default_role)
                 overwrites.speak = None
                 log.debug("unlocking %s in guild %s", channel, channel.guild.name)
-                await channel.set_permissions(
-                    channel.guild.default_role, overwrite=overwrites, reason=reason
-                )
+                await channel.set_permissions(channel.guild.default_role, overwrite=overwrites, reason=reason)
         except discord.Forbidden:
             return False
         else:
@@ -161,9 +141,7 @@ class Mod(Cog):
                 )
                 return True
             else:
-                raise commands.BadArgument(
-                    "This command can only be used in text channels."
-                )
+                raise commands.BadArgument("This command can only be used in text channels.")
         except discord.Forbidden:
             return False
 
@@ -177,14 +155,9 @@ class Mod(Cog):
     ) -> bool:
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(
-                f"User `{user}` is not a member of guild `{guild.name}`"
-            )
+            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
 
-        if (
-            member.timed_out_until is not None
-            and member.timed_out_until > discord.utils.utcnow()
-        ):
+        if member.timed_out_until is not None and member.timed_out_until > discord.utils.utcnow():
             raise commands.BadArgument(
                 f"User `{member}` is already timed out. Their timeout will remove **{discord.utils.format_dt(member.timed_out_until, 'R')}**"
             )
@@ -206,9 +179,7 @@ class Mod(Cog):
     ) -> bool:
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(
-                f"User `{user}` is not a member of guild `{guild.name}`"
-            )
+            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
 
         if member.timed_out_until is None:
             return False
@@ -231,9 +202,7 @@ class Mod(Cog):
     ) -> bool:
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(
-                f"User `{user}` is not a member of guild `{guild.name}`"
-            )
+            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
 
         try:
             log.debug("adding role %s to %s in guild %s", role.name, member, guild.name)
@@ -253,14 +222,10 @@ class Mod(Cog):
     ) -> bool:
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(
-                f"User `{user}` is not a member of guild `{guild.name}`"
-            )
+            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
 
         try:
-            log.debug(
-                "removing role %s from %s in guild %s", role.name, member, guild.name
-            )
+            log.debug("removing role %s from %s in guild %s", role.name, member, guild.name)
             await member.remove_roles(role, reason=reason)
         except discord.Forbidden:
             return False
@@ -298,6 +263,21 @@ class Mod(Cog):
             await ctx.send(f"Banned **{user}** for reason: **{reason}**")
         else:
             await ctx.send(f"Failed banning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
+
+    @commands.command(name="unban")
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    async def unban_command(
+        self,
+        ctx: Context,
+        user: BannedMember,
+        *,
+        reason: Annotated[Optional[str], ActionReason] = None,
+    ) -> None:
+        if await self.unban_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
+            await ctx.send(f"Unbanned **{user}** for reason: **{reason}**")
+        else:
+            await ctx.send(f"Failed unbanning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
 
     @commands.command(name="lock")
     @commands.has_permissions(manage_channels=True)
@@ -358,9 +338,7 @@ class Mod(Cog):
     @purge_command.command(name="regex")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _regex(
-        self, ctx: Context, pattern: Optional[str] = None, search: int = 100
-    ):
+    async def _regex(self, ctx: Context, pattern: Optional[str] = None, search: int = 100):
         """Removed messages that matches the regex pattern."""
         pattern = pattern or r".*"
 
@@ -381,9 +359,7 @@ class Mod(Cog):
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
     async def images(self, ctx: Context, search: int = 100):
         """Removes messages that have embeds or attachments."""
-        await self.purge_method(
-            ctx, search, lambda e: len(e.embeds) or len(e.attachments)
-        )
+        await self.purge_method(ctx, search, lambda e: len(e.embeds) or len(e.attachments))
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
@@ -411,9 +387,7 @@ class Mod(Cog):
         """Removes a bot user's messages and messages with their optional prefix."""
 
         def predicate(m: discord.Message):
-            return (m.webhook_id is None and m.author.bot) or (
-                prefix and m.content.startswith(prefix)
-            )
+            return (m.webhook_id is None and m.author.bot) or (prefix and m.content.startswith(prefix))
 
         await self.purge_method(ctx, search, predicate)
 
@@ -493,15 +467,9 @@ class Mod(Cog):
         parser.add_argument("--not", action="store_true", dest="_not")
         parser.add_argument("--emoji", action="store_true")
         parser.add_argument("--bot", action="store_const", const=lambda m: m.author.bot)
-        parser.add_argument(
-            "--embeds", action="store_const", const=lambda m: len(m.embeds)
-        )
-        parser.add_argument(
-            "--files", action="store_const", const=lambda m: len(m.attachments)
-        )
-        parser.add_argument(
-            "--reactions", action="store_const", const=lambda m: len(m.reactions)
-        )
+        parser.add_argument("--embeds", action="store_const", const=lambda m: len(m.embeds))
+        parser.add_argument("--files", action="store_const", const=lambda m: len(m.attachments))
+        parser.add_argument("--reactions", action="store_const", const=lambda m: len(m.reactions))
         parser.add_argument("--search", type=int)
         parser.add_argument("--after", type=int)
         parser.add_argument("--before", type=int)
@@ -546,9 +514,7 @@ class Mod(Cog):
             predicates.append(lambda m: any(sub in m.content for sub in args.contains))
 
         if args.starts:
-            predicates.append(
-                lambda m: any(m.content.startswith(s) for s in args.starts)
-            )
+            predicates.append(lambda m: any(m.content.startswith(s) for s in args.starts))
 
         if args.ends:
             predicates.append(lambda m: any(m.content.endswith(s) for s in args.ends))
@@ -566,14 +532,10 @@ class Mod(Cog):
             args.search = 100
 
         args.search = max(0, min(2000, args.search))  # clamp from 0-2000
-        await self.purge_method(
-            ctx, args.search, predicate, before=args.before, after=args.after
-        )
+        await self.purge_method(ctx, args.search, predicate, before=args.before, after=args.after)
 
     @commands.command(name="timeout", aliases=["mute"])
-    @commands.has_permissions(
-        manage_roles=True, manage_messages=True, moderate_members=True
-    )
+    @commands.has_permissions(manage_roles=True, manage_messages=True, moderate_members=True)
     @commands.bot_has_guild_permissions(moderate_members=True)
     async def timeout(
         self,
@@ -585,17 +547,13 @@ class Mod(Cog):
     ):
         """Timeout a user for a specified duration."""
 
-        if await self.timeout_method(
-            user=user, duration=duration.dt, reason=reason, guild=ctx.guild  # type: ignore
-        ):
+        if await self.timeout_method(user=user, duration=duration.dt, reason=reason, guild=ctx.guild):  # type: ignore
             await ctx.send(
                 f"Successfully timed out {user}. Timeout will remove **{discord.utils.format_dt(duration.dt, 'R')}**."
             )
 
     @commands.command(name="untimeout", aliases=["unmute"])
-    @commands.has_permissions(
-        manage_roles=True, manage_messages=True, moderate_members=True
-    )
+    @commands.has_permissions(manage_roles=True, manage_messages=True, moderate_members=True)
     @commands.bot_has_guild_permissions(moderate_members=True)
     async def untimeout(
         self,
@@ -606,9 +564,7 @@ class Mod(Cog):
     ):
         """Untimeout a user."""
 
-        if await self.unmute_method(
-            user=user, reason=reason, guild=ctx.guild  # type: ignore
-        ):
+        if await self.unmute_method(user=user, reason=reason, guild=ctx.guild):  # type: ignore
             await ctx.send(f"Successfully removed timeout from {user}.")
 
     @commands.group(name="add")

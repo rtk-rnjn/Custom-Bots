@@ -79,9 +79,7 @@ class Config:
 
     @property
     def activity(self) -> discord.Activity:
-        return discord.Activity(
-            type=getattr(discord.ActivityType, self._activity), name=self._media
-        )
+        return discord.Activity(type=getattr(discord.ActivityType, self._activity), name=self._media)
 
     @classmethod
     def from_id(cls, id: int) -> Config:  # type: ignore

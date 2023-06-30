@@ -22,7 +22,7 @@ class Owner(Cog):
     async def playing(
         self,
         ctx: Context,
-        status: Optional[Literal["online", "dnd", "offline", "idle"]] = "dnd",
+        status: Optional[Literal["online", "dnd", "idle"]] = "dnd",
         *,
         media: str,
     ):

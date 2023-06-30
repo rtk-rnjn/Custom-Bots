@@ -38,9 +38,7 @@ class Misc(Cog):
             try:
                 await channel.send(embed=discord.Embed.from_dict(json.loads(str(data))))  # type: ignore
             except Exception as e:
-                await ctx.send(
-                    f"{ctx.author.mention} you didn't provide the proper json object. Error raised: {e}"
-                )
+                await ctx.send(f"{ctx.author.mention} you didn't provide the proper json object. Error raised: {e}")
         else:
             await ctx.send(
                 f"{ctx.author.mention} you don't have Embed Links permission in {channel.mention}"  # type: ignore

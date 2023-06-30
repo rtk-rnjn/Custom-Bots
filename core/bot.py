@@ -46,8 +46,8 @@ class Bot(commands.Bot):
         self.cogs_to_load = config.cogs
         self.session = None
 
-        self.spam_control: "commands.CooldownMapping" = (
-            commands.CooldownMapping.from_cooldown(3, 5, commands.BucketType.user)
+        self.spam_control: "commands.CooldownMapping" = commands.CooldownMapping.from_cooldown(
+            3, 5, commands.BucketType.user
         )
         self._auto_spam_count: "Counter[int]" = Counter()
         self._BotBase__cogs = commands.core._CaseInsensitiveDict()
@@ -106,9 +106,7 @@ class Bot(commands.Bot):
         member_id: int | str | discord.Object,
         in_guild: bool = True,
     ) -> discord.Member | discord.User | None:
-        member_id = (
-            member_id.id if isinstance(member_id, discord.Object) else int(member_id)
-        )
+        member_id = member_id.id if isinstance(member_id, discord.Object) else int(member_id)
 
         if not in_guild:
             return await self.getch(self.get_user, self.fetch_user, int(member_id))
@@ -143,9 +141,7 @@ class Bot(commands.Bot):
             if bucket.update_rate_limit(message.created_at.timestamp()):
                 self._auto_spam_count[message.author.id] += 1
                 if self._auto_spam_count[message.author.id] >= 3:
-                    logger.debug(
-                        "Auto spam detected, ignoring command. Context %s", ctx
-                    )
+                    logger.debug("Auto spam detected, ignoring command. Context %s", ctx)
                     return
             else:
                 self._auto_spam_count.pop(message.author.id, None)
@@ -174,10 +170,7 @@ class Bot(commands.Bot):
             return
 
         if isinstance(error, commands.BotMissingPermissions):
-            missing = [
-                perm.replace("_", " ").replace("guild", "server").title()
-                for perm in error.missing_permissions
-            ]
+            missing = [perm.replace("_", " ").replace("guild", "server").title() for perm in error.missing_permissions]
             if len(missing) > 2:
                 fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
             else:
@@ -185,24 +178,17 @@ class Bot(commands.Bot):
             return await ctx.send(f"Bot is missing permissions: `{fmt}`")
 
         if isinstance(error, commands.MissingPermissions):
-            missing = [
-                perm.replace("_", " ").replace("guild", "server").title()
-                for perm in error.missing_permissions
-            ]
+            missing = [perm.replace("_", " ").replace("guild", "server").title() for perm in error.missing_permissions]
             if len(missing) > 2:
                 fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
             else:
                 fmt = " and ".join(missing)
-            return await ctx.send(
-                f"You need the following permission(s) to the run the command: `{fmt}`"
-            )
+            return await ctx.send(f"You need the following permission(s) to the run the command: `{fmt}`")
 
         if isinstance(error, commands.CommandOnCooldown):
             now = discord.utils.utcnow() + datetime.timedelta(seconds=error.retry_after)
             discord_time = discord.utils.format_dt(now, "R")
-            return await ctx.send(
-                f"This command is on cooldown. Try again in {discord_time}"
-            )
+            return await ctx.send(f"This command is on cooldown. Try again in {discord_time}")
 
         if isinstance(
             error,
@@ -213,9 +199,7 @@ class Bot(commands.Bot):
             ),
         ):
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.send(
-                f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info."
-            )
+            return await ctx.send(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info.")
 
         if isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)  # type: ignore
@@ -224,9 +208,7 @@ class Bot(commands.Bot):
         # return await ctx.send(f"Error: {error}")
 
     async def get_active_timer(self, **filters: Any) -> dict:
-        return await self.timers.find_one(
-            filters, sort=[("expires_at", pymongo.ASCENDING)]
-        )
+        return await self.timers.find_one(filters, sort=[("expires_at", pymongo.ASCENDING)])
 
     async def wait_for_active_timers(self, **filters: Any) -> dict:
         timers = await self.get_active_timer(**filters)
@@ -351,12 +333,7 @@ class Bot(commands.Bot):
         if delete_count == 0:
             return data
 
-        if (
-            delete_count
-            and self._current_timer
-            and self._current_timer["_id"] == kw["_id"]
-            and self.timer_task
-        ):
+        if delete_count and self._current_timer and self._current_timer["_id"] == kw["_id"] and self.timer_task:
             self.timer_task.cancel()
             self.timer_task = self.loop.create_task(self.dispatch_timers())
         return data
@@ -368,9 +345,7 @@ class Bot(commands.Bot):
             return True
         return False
 
-    async def get_or_fetch_message(
-        self, channel: discord.abc.Messageable, message_id: int
-    ) -> discord.Message | None:
+    async def get_or_fetch_message(self, channel: discord.abc.Messageable, message_id: int) -> discord.Message | None:
         try:
             return self.message_cache[message_id]
         except KeyError:
