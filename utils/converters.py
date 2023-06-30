@@ -23,22 +23,30 @@ __all__ = (
 )
 
 
-def can_execute_action(ctx: Context, user: discord.Member, target: discord.Member) -> bool:
+def can_execute_action(
+    ctx: Context,
+    mod: discord.Member,
+    target: discord.Member | discord.Role | discord.User | None,
+) -> bool | None:
     assert ctx.guild
 
     if ctx.author == ctx.guild.owner:
         return True
 
-    if user == ctx.guild.owner:
+    if mod == ctx.guild.owner:
         return False
 
-    if user == target:
+    if mod == target:
         return False
 
-    if user.top_role == target.top_role:
-        return False
+    if isinstance(target, discord.Role):
+        return mod.top_role.position > target.position
 
-    return user.top_role >= target.top_role
+    if isinstance(target, discord.Member):
+        if mod.top_role == target.top_role:
+            return False
+
+        return mod.top_role >= target.top_role
 
 
 def convert_bool(entiry: str) -> bool | None:
@@ -102,7 +110,7 @@ class MemberID(commands.Converter):
                         {"id": member_id, "__str__": lambda s: f"Member ID {s.id}"},
                     )()
 
-        if not can_execute_action(ctx, ctx.author, m):  # type: ignore
+        if not can_execute_action(ctx, ctx.author, m):
             raise commands.BadArgument(
                 f"{ctx.author.mention} can not {ctx.command.qualified_name} the {m}, as the their's role is above you"  # type: ignore
             )
@@ -140,6 +148,12 @@ class RoleID(commands.Converter):
                 role: discord.Role | None = discord.utils.get(ctx.guild.roles, id=role_id)
                 if role is None:
                     raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
+
+        if not can_execute_action(ctx, ctx.author, role):
+            raise commands.BadArgument(
+                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {role}, as the their's role is above you"  # type: ignore
+            )
+        return role
 
 
 class BannedMember(commands.Converter):

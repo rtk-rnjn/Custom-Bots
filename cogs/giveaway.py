@@ -27,7 +27,7 @@ class Giveaway(Cog):
             return main
 
     @staticmethod
-    async def __wait_for__message(ctx: Context) -> str:
+    async def __wait_for_message(ctx: Context) -> str:
         def check(m: discord.Message) -> bool:
             return m.channel.id == ctx.channel.id and m.author.id == ctx.author.id
 
@@ -55,24 +55,24 @@ class Giveaway(Cog):
         for index, question in enumerate(quest, start=1):
             await ctx.reply(embed=discord.Embed(description=question))
             if index == 1:
-                channel = await commands.TextChannelConverter().convert(ctx, argument=(await self.__wait_for__message(ctx)))
+                channel = await commands.TextChannelConverter().convert(ctx, argument=(await self.__wait_for_message(ctx)))
                 CHANNEL = channel
                 payload["giveaway_channel"] = channel.id
 
             elif index == 2:
-                duration = ShortTime(await self.__wait_for__message(ctx))
+                duration = ShortTime(await self.__wait_for_message(ctx))
                 payload["endtime"] = duration.dt.timestamp()
 
             elif index == 3:
-                prize = await self.__wait_for__message(ctx)
+                prize = await self.__wait_for_message(ctx)
                 payload["prize"] = prize
 
             elif index == 4:
-                winners = self.__is_int(await self.__wait_for__message(ctx), "Winner must be a whole number")
+                winners = self.__is_int(await self.__wait_for_message(ctx), "Winner must be a whole number")
                 payload["winners"] = winners
 
             elif index == 5:
-                arg = await self.__wait_for__message(ctx)
+                arg = await self.__wait_for_message(ctx)
                 if arg.lower() not in ("skip", "no", "none"):
                     role = await commands.RoleConverter().convert(ctx, argument=arg)
                     payload["required_role"] = role.id
@@ -81,7 +81,7 @@ class Giveaway(Cog):
 
             elif index == 6:
                 server = self.__is_int(
-                    await self.__wait_for__message(ctx),
+                    await self.__wait_for_message(ctx),
                     "Server ID must be a whole number",
                 )
                 payload["required_guild"] = server

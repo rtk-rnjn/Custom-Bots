@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional
+import asyncio
+from typing import Callable, Optional, Type
 
 import discord
 from discord.ext import commands
@@ -49,14 +50,21 @@ class Ticket(Cog):
     }
 
     async def cog_load(self):
+        await self._load_ticket_cache()
+
+    async def cog_unload(self):
+        await self._save_ticket_cache()
+
+    async def _save_ticket_cache(self) -> None:
+        if self._ticket_cache:
+            BOT_ID = self.bot.user.id  # type: ignore
+            await self.ticket_collection.update_one({"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache})
+
+    async def _load_ticket_cache(self) -> None:
         BOT_ID = self.bot.user.id  # type: ignore
         self._ticket_cache = await self.ticket_collection.find_one({"_id": f"ticket_{BOT_ID}"}) or {}
 
         self._ticket_cache = {**self.DEFAULT_PAYLOAD, **self._ticket_cache}
-
-    async def cog_unload(self):
-        BOT_ID = self.bot.user.id  # type: ignore
-        await self.ticket_collection.update_one({"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache})
 
     async def create_ticket(self, guild: discord.Guild, user: discord.Member) -> None:
         category_channel = self._ticket_cache["ticket_category_channel"]
@@ -69,15 +77,18 @@ class Ticket(Cog):
         assert isinstance(category, discord.CategoryChannel)
 
         role = guild.get_role(ping_role)
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+        }
+        if role is not None:
+            overwrites[role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
         ticket = await category.create_text_channel(
             name=f"ticket-{len(self._ticket_cache['active_tickets']) + 1}",
             topic="Ticket",
-            overwrites={
-                guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-                user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-                role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            },
+            overwrites=overwrites,
         )
         data = {
             "ticket_id": ticket.id,
@@ -216,9 +227,59 @@ class Ticket(Cog):
 
         await ticket_channel.send(f"{member.mention} removed from the ticket.")
 
+    async def __wait_for_message(
+        self,
+        msg: str,
+        *,
+        ctx: Context,
+        check: Callable[[discord.Message], bool],
+        convertor: Optional[commands.Converter] = None,
+    ) -> str | discord.Object | None:
+        try:
+            await ctx.send(embed=discord.Embed(description=msg))
+            message = await self.bot.wait_for("message", timeout=60.0, check=check)  # type: discord.Message
+        except asyncio.TimeoutError as e:
+            raise commands.BadArgument("Ticket setup timed out.") from e
+
+        if message.content.lower() == "cancel":
+            raise commands.BadArgument("Ticket setup cancelled.")
+        if message.content.lower() in {"none", "no"}:
+            return None
+        return message.content if convertor is None else await convertor.convert(ctx, message.content)
+
     @ticket.group(name="setup", aliases=["config"], invoke_without_command=True)
     async def ticket_setup(self, ctx: Context) -> None:
-        pass
+        """Ticket setup walkthrough"""
+        if not ctx.invoked_subcommand:
+
+            def check(m: discord.Message) -> bool:
+                return m.author == ctx.author and m.channel == ctx.channel
+
+            ping_role = await self.__wait_for_message(
+                "Ping role for tickets? (type `none` for no ping role)", ctx=ctx, check=check, convertor=RoleID()
+            )
+            self._ticket_cache["ticket_ping_role"] = getattr(ping_role, "id", None)
+            category = await self.__wait_for_message(
+                "Category for tickets? (type `none` for no category)",
+                ctx=ctx,
+                check=check,
+                convertor=commands.CategoryChannelConverter(),
+            )
+            self._ticket_cache["ticket_category"] = getattr(category, "id", None)
+            log_channel = await self.__wait_for_message(
+                "Log channel for tickets? (type `none` for no log channel)",
+                ctx=ctx,
+                check=check,
+                convertor=commands.TextChannelConverter(),
+            )
+            self._ticket_cache["ticket_log_channel"] = getattr(log_channel, "id", None)
+            message = await self.__wait_for_message(
+                "Message in which users can react to open a ticket? (type `none` for no message)", ctx=ctx, check=check
+            )
+            self._ticket_cache["ticket_message"] = message
+
+            await ctx.send(embed=discord.Embed(description="Ticket setup complete."))
+            await self._save_ticket_cache()
 
     @ticket_setup.command(name="pingrole", aliases=["ping"])
     async def ticket_setup_pingrole(self, ctx: Context, *, role: Optional[RoleID] = None) -> None:
