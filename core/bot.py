@@ -105,7 +105,7 @@ class Bot(commands.Bot):
         guild: discord.Guild,
         member_id: int | str | discord.Object,
         in_guild: bool = True,
-    ) -> discord.Member | discord.User | None:
+    ) -> discord.Member | None:
         member_id = member_id.id if isinstance(member_id, discord.Object) else int(member_id)
 
         if not in_guild:

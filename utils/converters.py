@@ -121,6 +121,12 @@ class MessageID(commands.Converter):
     async def convert(self, ctx: Context, argument: str) -> discord.Message | None:
         assert ctx.guild is not None
         try:
+            message: discord.Message | None = await commands.MessageConverter().convert(ctx, argument)  # type: ignore
+        except commands.BadArgument:
+            pass
+        else:
+            return message
+        try:
             message_id = int(argument, base=10)
         except ValueError:
             raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None

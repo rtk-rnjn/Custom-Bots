@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Callable, Optional, Type
 
 import discord
@@ -9,13 +10,17 @@ from discord.ext import commands
 from core import Bot, Cog, Context
 from utils import MessageID, RoleID
 
+log = logging.getLogger("ticket")
+
+CACHE_HINT = dict[str, int | list[dict[str, int | str | list[int] | None]] | None]
+
 
 class Ticket(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.ticket_collection = self.bot.ticket
 
-        self._ticket_cache = {}
+        self._ticket_cache: CACHE_HINT = {}
 
         """
         {
@@ -67,16 +72,15 @@ class Ticket(Cog):
         self._ticket_cache = {**self.DEFAULT_PAYLOAD, **self._ticket_cache}
 
     async def create_ticket(self, guild: discord.Guild, user: discord.Member) -> None:
-        category_channel = self._ticket_cache["ticket_category_channel"]
+        category_channel = self._ticket_cache["ticket_category_channel"]  # type: int
         ping_role = self._ticket_cache["ticket_ping_role"]
 
-        category = guild.get_channel(category_channel)
+        category = guild.get_channel(category_channel or 0)  # type: discord.CategoryChannel | None
         if category is None:
+            await user.send("Ticket category channel not found.")
             return
 
-        assert isinstance(category, discord.CategoryChannel)
-
-        role = guild.get_role(ping_role)
+        role = guild.get_role(ping_role or 0)  # type: discord.Role | None
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
@@ -107,7 +111,7 @@ class Ticket(Cog):
 
     async def delete_ticket(self, guild: discord.Guild, ticket: dict) -> None:
         category_channel = self._ticket_cache["ticket_category_channel"]
-        category = guild.get_channel(category_channel)
+        category = guild.get_channel(category_channel or 0)
         if category is None:
             return
 
@@ -124,15 +128,18 @@ class Ticket(Cog):
         self._ticket_cache["active_tickets"].remove(ticket)
 
     @commands.group(name="ticket", aliases=["tickets"], invoke_without_command=True)
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     async def ticket(self, ctx: Context) -> None:
         """Ticket related commands"""
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
 
     @ticket.command(name="new", aliases=["create"])
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_new(self, ctx: Context) -> None:
         """Create a new ticket"""
-        active_tickets = self._ticket_cache["active_tickets"]
+        active_tickets = self._ticket_cache["active_tickets"] or []  # type: list[dict]
         if ctx.author.id in [ticket["ticket_owner"] for ticket in active_tickets]:
             await ctx.reply(f"{ctx.author.mention} you already have an active ticket.")
             return
@@ -142,9 +149,11 @@ class Ticket(Cog):
         await self.create_ticket(ctx.guild, ctx.author)
 
     @ticket.command(name="close", aliases=["delete"])
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_close(self, ctx: Context) -> None:
         """Close a ticket"""
-        active_tickets = self._ticket_cache["active_tickets"]
+        active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
         ticket = next(
             (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
             None,
@@ -160,9 +169,11 @@ class Ticket(Cog):
         await self.log_ticket_event(guild=ctx.guild, ticket=ticket, event="delete")
 
     @ticket.command(name="add", aliases=["invite"])
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_add(self, ctx: Context, *, member: discord.Member) -> None:
         """Add a member to your ticket"""
-        active_tickets = self._ticket_cache["active_tickets"]
+        active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
         ticket = next(
             (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
             None,
@@ -194,9 +205,11 @@ class Ticket(Cog):
         await ticket_channel.send(f"{member.mention} added to the ticket.")
 
     @ticket.command(name="remove", aliases=["kick"])
+    @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
+    @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_remove(self, ctx: Context, *, member: discord.Member) -> None:
         """Remove a member from your ticket"""
-        active_tickets = self._ticket_cache["active_tickets"]
+        active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
         ticket = next(
             (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
             None,
@@ -248,6 +261,7 @@ class Ticket(Cog):
         return message.content if convertor is None else await convertor.convert(ctx, message.content)
 
     @ticket.group(name="setup", aliases=["config"], invoke_without_command=True)
+    @commands.has_permissions(manage_guild=True)
     async def ticket_setup(self, ctx: Context) -> None:
         """Ticket setup walkthrough"""
         if not ctx.invoked_subcommand:
@@ -256,7 +270,10 @@ class Ticket(Cog):
                 return m.author == ctx.author and m.channel == ctx.channel
 
             ping_role = await self.__wait_for_message(
-                "Ping role for tickets? (type `none` for no ping role)", ctx=ctx, check=check, convertor=RoleID()
+                "Ping role for tickets? (type `none` for no ping role)",
+                ctx=ctx,
+                check=check,
+                convertor=RoleID(),
             )
             self._ticket_cache["ticket_ping_role"] = getattr(ping_role, "id", None)
             category = await self.__wait_for_message(
@@ -265,7 +282,7 @@ class Ticket(Cog):
                 check=check,
                 convertor=commands.CategoryChannelConverter(),
             )
-            self._ticket_cache["ticket_category"] = getattr(category, "id", None)
+            self._ticket_cache["ticket_category_channel"] = getattr(category, "id", None)
             log_channel = await self.__wait_for_message(
                 "Log channel for tickets? (type `none` for no log channel)",
                 ctx=ctx,
@@ -274,14 +291,30 @@ class Ticket(Cog):
             )
             self._ticket_cache["ticket_log_channel"] = getattr(log_channel, "id", None)
             message = await self.__wait_for_message(
-                "Message in which users can react to open a ticket? (type `none` for no message)", ctx=ctx, check=check
+                "Message in which users can react to open a ticket? (type `none` for no message)",
+                ctx=ctx,
+                check=check,
             )
-            self._ticket_cache["ticket_message"] = message
+            if message is not None:
+                self._ticket_cache["ticket_message"] = message
+            else:
+                maybe_create_new_message = await self.__wait_for_message(
+                    "Do you want me to create a new message? (yes/no)",
+                    ctx=ctx,
+                    check=check,
+                )
+                if maybe_create_new_message.lower() in {"yes", "y"}:
+                    message = await ctx.send(embed=discord.Embed(description="React to open a ticket."))
+                    self._ticket_cache["ticket_message"] = message.id
+                    await message.add_reaction("\N{TICKET}")
+                else:
+                    self._ticket_cache["ticket_message"] = None
 
             await ctx.send(embed=discord.Embed(description="Ticket setup complete."))
             await self._save_ticket_cache()
 
     @ticket_setup.command(name="pingrole", aliases=["ping"])
+    @commands.has_permissions(manage_guild=True)
     async def ticket_setup_pingrole(self, ctx: Context, *, role: Optional[RoleID] = None) -> None:
         """Set the ping role for tickets"""
         if role is None:
@@ -289,10 +322,11 @@ class Ticket(Cog):
             await ctx.reply("Ticket ping role removed.")
             return
 
-        self._ticket_cache["ticket_ping_role"] = role
+        self._ticket_cache["ticket_ping_role"] = role.id  # type: ignore
         await ctx.reply(f"Ticket ping role set to {role.mention}.")  # type: ignore
 
     @ticket_setup.command(name="category", aliases=["cat"])
+    @commands.has_permissions(manage_guild=True)
     async def ticket_setup_category(self, ctx: Context, *, category: Optional[discord.CategoryChannel] = None) -> None:
         """Set the ticket category"""
         if category is None:
@@ -304,10 +338,19 @@ class Ticket(Cog):
         await ctx.reply(f"Ticket category set to {category.mention}.")
 
     @ticket_setup.command(name="message", aliases=["msg"])
+    @commands.has_permissions(manage_guild=True)
     async def ticket_setup_message(self, ctx: Context, *, message: Optional[MessageID] = None) -> None:
-        pass
+        """Set the ticket message"""
+        if message is None:
+            self._ticket_cache["ticket_message"] = None
+            await ctx.reply("Ticket message removed.")
+            return
+
+        self._ticket_cache["ticket_message"] = message.id
+        await ctx.reply(f"Ticket message set to {message.jump_url}.")
 
     @ticket_setup.command(name="logchannel", aliases=["log"])
+    @commands.has_permissions(manage_guild=True)
     async def ticket_setup_logchannel(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:
         """Set the ticket log channel"""
         if channel is None:
@@ -320,7 +363,7 @@ class Ticket(Cog):
 
     async def log_ticket_event(self, *, guild: discord.Guild, ticket: dict, event: str):
         """Log a ticket event"""
-        log_channel = guild.get_channel(self._ticket_cache["ticket_log_channel"])
+        log_channel = guild.get_channel(self._ticket_cache["ticket_log_channel"] or 0)
         if log_channel is None:
             return
 
@@ -353,6 +396,33 @@ class Ticket(Cog):
         )
 
         await log_channel.send(embed=embed)
+
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        message_id = payload.message_id
+
+        if message_id != self._ticket_cache["ticket_message"]:
+            return
+
+        if str(payload.emoji) != "\N{TICKET}":
+            return
+
+        guild = self.bot.get_guild(payload.guild_id or 0)  # type: discord.Guild | None
+        if guild is None:
+            return
+
+        user: discord.Member | None = await self.bot.get_or_fetch_member(guild, payload.message_id)
+        if user is None:
+            return
+
+        if user.bot:
+            return
+
+        for ticket in self._ticket_cache["active_tickets"]:
+            if ticket["ticket_owner"] == user.id:
+                return
+
+        await self.create_ticket(guild, user)
 
 
 async def setup(bot: Bot) -> None:
