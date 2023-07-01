@@ -38,6 +38,9 @@ from .cog_utils import EmbedBuilder, EmbedCancel, EmbedSend
 log = logging.getLogger("misc")
 
 
+PERMANENT_INVITE = "https://discord.gg/Zk4H4K9Z4e"
+
+
 class Misc(Cog):
     """Miscellaneous commands."""
 
@@ -86,8 +89,8 @@ class Misc(Cog):
                 title="This bot is not intended to be used in multiple servers.",
                 description=(
                     "You can still add the bot on your server, but it won't work.\n"
-                    f"> Bot is made to work in {main_guild.name} (ID: {main_guild.id})\n"
-                    f"> If you want to use the bot in your server, please consider asking [{owner.global_name}] (`{owner.id}`)\n"
+                    f"> - Bot is made to work in **[{main_guild.name}]({PERMANENT_INVITE})** (ID: `{main_guild.id}`)\n"
+                    f"> - If you want to use the bot in your server, please consider asking **[{owner.mention} - `{owner}`]** (`{owner.id}`)\n"
                 ),
                 url=discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(0)),
             )
