@@ -60,6 +60,9 @@ class Bot(commands.Bot):
         self.reminder_event: asyncio.Event = asyncio.Event()
 
         self.message_cache: dict[int, Message] = {}
+        self.before_invoke(self.__before_invoke)
+
+        self.__config = config
 
     def init_db(self) -> None:
         self.main_db = self.mongo["customBots"]  # type: ignore
@@ -146,8 +149,6 @@ class Bot(commands.Bot):
             else:
                 self._auto_spam_count.pop(message.author.id, None)
         await self.invoke(ctx)
-
-    # TODO: Add timers
 
     async def on_command_error(self, ctx: Context, error: commands.CommandError):
         await self.wait_until_ready()
@@ -275,7 +276,6 @@ class Bot(commands.Bot):
         content: str | None = None,
         message: discord.Message | int | None = None,
         dm_notify: bool = False,
-        is_todo: bool = False,
         extra: dict[str, Any] | None = None,
         **kw,
     ) -> InsertOneResult:
@@ -305,9 +305,7 @@ class Bot(commands.Bot):
             "messageAuthor": message.author.id if isinstance(message, discord.Message) else kw.get("messageAuthor"),
             "messageChannel": message.channel.id if isinstance(message, discord.Message) else kw.get("messageChannel"),
             "dm_notify": dm_notify,
-            "is_todo": is_todo,
             "mod_action": mod_action,
-            "cmd_exec_str": cmd_exec_str,
             "extra": extra,
             **kw,
         }
@@ -366,3 +364,10 @@ class Bot(commands.Bot):
 
     async def on_error(self, event: str, *args, **kwargs) -> None:
         logger.error("Error in event %s.", event, exc_info=True)
+
+    async def __before_invoke(self, ctx: Context) -> None:
+        guild_id = self.__config.guild_id
+
+        if ctx.guild and guild_id and ctx.guild.id != guild_id and not await ctx.bot.is_owner(ctx.author):
+            await ctx.reply("This command is disabled in this guild.")
+            raise commands.DisabledCommand("This command is disabled in this guild.")

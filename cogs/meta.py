@@ -28,5 +28,4 @@ class Meta(Cog):
 
 
 async def setup(bot: Bot) -> None:
-    log.info("Loading Meta cog...")
     await bot.add_cog(Meta(bot))

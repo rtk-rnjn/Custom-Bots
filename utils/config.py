@@ -6,6 +6,7 @@ import os
 from typing import Any
 
 import discord
+from pymongo import MongoClient
 
 from .converters import convert_bool
 
@@ -15,29 +16,49 @@ with contextlib.suppress(ImportError):
     load_dotenv()
     dotenv_values(".env")
 
-
 with open("bots.json") as f:
     bots = json.load(f)
 
 master_owner = bots["master_owner"]
 all_cogs = bots["all_cogs"]
 
-__all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV")
+__all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV", "MONGO_CLIENT", "BOT_CONFIGS")
 
 
 class Config:
     def __init__(self, **kwargs: str | int | bool | list[str]) -> None:
         # fmt: off
-        self._id: int         = kwargs.pop("id")              # type: ignore
-        self._name: str       = kwargs.pop("name")            # type: ignore
-        self._token: str      = os.environ.get(f"BOT_{self.id}")  # type: ignore
-        self._owner_id: int   = kwargs.pop("owner_id")        # type: ignore
-        self._cogs: list[str] = kwargs.pop("cogs")            # type: ignore
-        self._prefix: str     = kwargs.pop("prefix")          # type: ignore
-        self._status: str     = kwargs.pop("status")          # type: ignore
-        self._activity: str   = kwargs.pop("activity")        # type: ignore
-        self._media: str      = kwargs.pop("media")           # type: ignore
+        self._id: int         = kwargs.pop("id")        # type: ignore
+        self._name: str       = kwargs.pop("name")      # type: ignore
+        self._token: str      = kwargs.get("token")     # type: ignore
+        self._owner_id: int   = kwargs.pop("owner_id")  # type: ignore
+        self._cogs: list[str] = kwargs.pop("cogs")      # type: ignore
+        self._prefix: str     = kwargs.pop("prefix")    # type: ignore
+        self._status: str     = kwargs.pop("status")    # type: ignore
+        self._activity: str   = kwargs.pop("activity")  # type: ignore
+        self._media: str      = kwargs.pop("media")     # type: ignore
+        self._guild_id: int   = kwargs.pop("guild_id")  # type: ignore
         # fmt: on
+
+        """
+        {
+            "id": INT,
+            "name": STR,
+            "prefix": STR,
+            "status": STR,
+            "activity": STR,
+            "token": STR,
+            "media": STR,
+            "guild_id": INT,
+            "owner_id": INT,
+            "cogs": [
+                STR
+            ]
+        }
+        """
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def __repr__(self) -> str:
         return f"<Config id={self.id} name={self.name}>"
@@ -80,6 +101,10 @@ class Config:
     @property
     def activity(self) -> discord.Activity:
         return discord.Activity(type=getattr(discord.ActivityType, self._activity), name=self._media)
+
+    @property
+    def guild_id(self) -> int:
+        return self._guild_id
 
     @classmethod
     def from_id(cls, id: int) -> Config:  # type: ignore
@@ -147,3 +172,23 @@ class Environment:
 
 
 ENV = Environment()
+MONGO_CLIENT = MongoClient(str(ENV.MONGO_URI))
+
+
+def load_config(bot_id: int | None = None) -> Config | list[Config] | None:
+    collection = MONGO_CLIENT["customBots"]["mainConfigCollection"]
+
+    if not bot_id:
+        ls = []
+        for data in collection.find({}, {"_id": 0}):
+            ls.append(Config(**data))
+
+        return ls
+
+    data = collection.find_one({"id": bot_id}, {"_id": 0})
+    return Config(**data) if data else None
+
+
+BOT_CONFIGS = load_config()
+if not isinstance(BOT_CONFIGS, list):
+    BOT_CONFIGS = [BOT_CONFIGS]

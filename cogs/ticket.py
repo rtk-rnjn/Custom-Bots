@@ -5,7 +5,7 @@ import logging
 from typing import Callable, Optional, Type
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from core import Bot, Cog, Context
 from utils import MessageID, RoleID
@@ -21,7 +21,7 @@ class Ticket(Cog):
         self.ticket_collection = self.bot.ticket
 
         self._ticket_cache: CACHE_HINT = {}
-
+        self.database_updater.start()
         """
         {
             "ticket_{BOT_ID}": {
@@ -40,6 +40,7 @@ class Ticket(Cog):
                         "ticket_members": [
                             INT
                         ]
+                    }
                 ]
             }
         }
@@ -54,16 +55,23 @@ class Ticket(Cog):
         "active_tickets": [],
     }
 
+    @tasks.loop(minutes=5)
+    async def database_updater(self) -> None:
+        await self._save_ticket_cache()
+
     async def cog_load(self):
         await self._load_ticket_cache()
 
     async def cog_unload(self):
         await self._save_ticket_cache()
 
+        if self.database_updater.is_running():
+            self.database_updater.cancel()
+
     async def _save_ticket_cache(self) -> None:
         if self._ticket_cache:
             BOT_ID = self.bot.user.id  # type: ignore
-            await self.ticket_collection.update_one({"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache})
+            await self.ticket_collection.update_one({"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache}, upsert=True)
 
     async def _load_ticket_cache(self) -> None:
         BOT_ID = self.bot.user.id  # type: ignore
@@ -77,7 +85,7 @@ class Ticket(Cog):
 
         category = guild.get_channel(category_channel or 0)  # type: discord.CategoryChannel | None
         if category is None:
-            await user.send("Ticket category channel not found.")
+            await user.send(f"Ticket category channel not found. Ask your Administrator to set it up.\n> Sent from `{guild.name}`")
             return
 
         role = guild.get_role(ping_role or 0)  # type: discord.Role | None
@@ -321,9 +329,11 @@ class Ticket(Cog):
             self._ticket_cache["ticket_ping_role"] = None
             await ctx.reply("Ticket ping role removed.")
             return
+        
+        assert isinstance(role, discord.Role)
 
-        self._ticket_cache["ticket_ping_role"] = role.id  # type: ignore
-        await ctx.reply(f"Ticket ping role set to {role.mention}.")  # type: ignore
+        self._ticket_cache["ticket_ping_role"] = role.id
+        await ctx.reply(f"Ticket ping role set to {role.mention}.")
 
     @ticket_setup.command(name="category", aliases=["cat"])
     @commands.has_permissions(manage_guild=True)
@@ -345,6 +355,8 @@ class Ticket(Cog):
             self._ticket_cache["ticket_message"] = None
             await ctx.reply("Ticket message removed.")
             return
+        
+        assert isinstance(message, discord.Message)
 
         self._ticket_cache["ticket_message"] = message.id
         await ctx.reply(f"Ticket message set to {message.jump_url}.")

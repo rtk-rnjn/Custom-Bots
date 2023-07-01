@@ -138,3 +138,4 @@ env.json
 venv
 tests/
 temp/*
+.ruff_cache/

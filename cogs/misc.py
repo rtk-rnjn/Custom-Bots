@@ -44,7 +44,19 @@ class Misc(Cog):
                 f"{ctx.author.mention} you don't have Embed Links permission in {channel.mention}"  # type: ignore
             )
 
+    @commands.command(name="invite")
+    async def invite_command(self, ctx: Context):
+        """Invite the bot to your server."""
+        await ctx.reply(
+            embed=discord.Embed(
+                title="This bot is not intended to be used in multiple servers.",
+                description="You can still add the bot on your server, but it won't work.",
+                url=discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(0)),
+            )
+            .set_thumbnail(url=self.bot.user.display_avatar.url)
+            .set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+        )
+
 
 async def setup(bot: Bot) -> None:
-    log.info("Loading Misc cog...")
     await bot.add_cog(Misc(bot))

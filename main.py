@@ -10,7 +10,7 @@ from discord.utils import setup_logging
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from core import Bot
-from utils import ENV, Config, CustomFormatter, bots
+from utils import BOT_CONFIGS, ENV, MONGO_CLIENT, Config, CustomFormatter
 
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -33,7 +33,7 @@ async def run(bot: Bot, config: Config):
 setup_logging(
     formatter=CustomFormatter(),
     handler=logging.handlers.RotatingFileHandler(
-        filename=".log",
+        filename=".discord.log",
         encoding="utf-8",
         maxBytes=1 * 1024 * 1024,  # 1 MiB
         backupCount=1,  # Rotate through 1 files
@@ -44,14 +44,16 @@ setup_logging(
 async def main():
     loop = asyncio.get_event_loop()
     tasks = []
-    for bot in bots["bots"]:
-        config = Config(**bot)
-
-        if config.token is None:
+    for config in BOT_CONFIGS:
+        if not config or config.token is None:
             continue
 
         bot = Bot(config)
+
         setattr(bot, "mongo", AsyncIOMotorClient(ENV["MONGO_URI"]))
+        setattr(bot, "sync_mongo", MONGO_CLIENT)
+        setattr(bot, "guild_id", config.guild_id)
+
         bot.init_db()
 
         tasks.append(
