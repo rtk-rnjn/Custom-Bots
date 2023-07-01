@@ -42,6 +42,13 @@ class Owner(Cog):
         log.info("presence changed to %s %s", ctx.invoked_with, media)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
+    @commands.command(hidden=True)
+    async def prefix(self, ctx: Context, *, prefix: str):
+        """Change bot prefix"""
+        self.bot.config.set_prefix(prefix)
+        log.info("prefix changed to %s", prefix)
+        await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+
 
 async def setup(bot: Bot) -> None:
     await bot.add_cog(Owner(bot))

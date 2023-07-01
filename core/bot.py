@@ -5,8 +5,9 @@ import datetime
 import logging
 import logging.handlers
 import os
+import re
 from collections import Counter
-from typing import Any
+from typing import Any, List, Union
 
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
@@ -35,7 +36,7 @@ logger.addHandler(handler)
 class Bot(commands.Bot):
     def __init__(self, config: Config, *args, **kwargs):
         super().__init__(
-            command_prefix=commands.when_mentioned_or(config.prefix),
+            command_prefix=self.get_prefix,
             intents=discord.Intents.all(),
             case_insensitive=True,
             strip_after_prefix=True,
@@ -63,6 +64,10 @@ class Bot(commands.Bot):
         self.before_invoke(self.__before_invoke)
 
         self.__config = config
+
+    @property
+    def config(self) -> Config:
+        return self.__config
 
     def init_db(self) -> None:
         self.main_db = self.mongo["customBots"]  # type: ignore
@@ -371,3 +376,11 @@ class Bot(commands.Bot):
         if ctx.guild and guild_id and ctx.guild.id != guild_id and not await ctx.bot.is_owner(ctx.author):
             await ctx.reply("This command is disabled in this guild.")
             raise commands.DisabledCommand("This command is disabled in this guild.")
+
+    def get_prefix(self, message: Message) -> list[str]:
+        prefix = self.__config.prefix
+        comp = re.compile(f"^({re.escape(prefix)}).*", flags=re.I)
+        match = comp.match(message.content)
+        if match is not None:
+            prefix = match[1]
+        return commands.when_mentioned_or(prefix)(self, message)

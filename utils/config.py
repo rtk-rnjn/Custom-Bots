@@ -111,6 +111,9 @@ class Config:
         for bot in bots["bots"]:
             if bot["id"] == id:
                 return cls(**bot)
+    
+    def set_prefix(self, prefix: str) -> None:
+        self._prefix = prefix
 
 
 class Null:
