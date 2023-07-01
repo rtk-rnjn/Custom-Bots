@@ -40,7 +40,7 @@ with contextlib.suppress(ImportError):
     load_dotenv()
     dotenv_values(".env")
 
-with open("bots.json") as f:
+with open("bots.json", encoding="utf-8") as f:
     bots = json.load(f)
 
 master_owner = bots["master_owner"]
@@ -129,12 +129,6 @@ class Config:
     @property
     def guild_id(self) -> int:
         return self._guild_id
-
-    @classmethod
-    def from_id(cls, id: int) -> Config:  # type: ignore
-        for bot in bots["bots"]:
-            if bot["id"] == id:
-                return cls(**bot)
 
     def set_prefix(self, prefix: str) -> None:
         self._prefix = prefix

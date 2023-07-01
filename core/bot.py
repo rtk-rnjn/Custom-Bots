@@ -32,6 +32,7 @@ import os
 import re
 from collections import Counter
 from typing import Any
+from typing_extensions import override
 
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
@@ -59,9 +60,11 @@ logger.addHandler(handler)
 
 
 class Bot(commands.Bot):
+    """Custom Bot implementation of commands.Bot"""
     mongo: Any
+    uptime: datetime.datetime
 
-    def __init__(self, config: Config, *args, **kwargs):
+    def __init__(self, config: Config):
         super().__init__(
             command_prefix=self.get_prefix,
             intents=discord.Intents.all(),
@@ -95,13 +98,15 @@ class Bot(commands.Bot):
 
     @property
     def config(self) -> Config:
+        """Return the bot's config."""
         return self.__config
 
     def init_db(self) -> None:
-        self.main_db = self.mongo["customBots"]  # type: ignore
-        self.timers = self.main_db["timerCollections"]
-        self.giveaways = self.main_db["giveawayCollections"]
-        self.ticket = self.main_db["ticketCollections"]
+        """Initialize the database collection."""
+        self.main_db = self.mongo["customBots"]  # type: ignore # pylint: disable=attribute-defined-outside-init
+        self.timers = self.main_db["timerCollections"]  # pylint: disable=attribute-defined-outside-init
+        self.giveaways = self.main_db["giveawayCollections"]  # pylint: disable=attribute-defined-outside-init
+        self.ticket = self.main_db["ticketCollections"]  # pylint: disable=attribute-defined-outside-init
 
     async def setup_hook(self) -> None:
         await self.load_extension("jishaku")
@@ -113,8 +118,8 @@ class Bot(commands.Bot):
                 await self.load_extension(cog)
             except commands.ExtensionNotFound:
                 logger.warning("extension %s not found. Skipping.", cog)
-            except commands.ExtensionFailed as e:
-                logger.warning("extension %s failed to load: %s", cog, e, exc_info=True)
+            except commands.ExtensionFailed as err:
+                logger.warning("extension %s failed to load: %s", cog, err, exc_info=True)
             except commands.NoEntryPointError:
                 logger.warning("extension %s has no setup function. Skipping.", cog)
             except commands.ExtensionAlreadyLoaded:
@@ -123,6 +128,7 @@ class Bot(commands.Bot):
                 logger.info("extension %s loaded", cog)
 
     async def on_ready(self) -> None:
+        """Bot startup, sets uptime."""
         if self._was_ready:
             return
 
@@ -137,6 +143,7 @@ class Bot(commands.Bot):
         self.timer_task = self.loop.create_task(self.dispatch_timers())
 
     async def on_message(self, message: discord.Message):
+        """Handle message events."""
         if message.author.bot or not message.guild:
             return
 
@@ -152,6 +159,7 @@ class Bot(commands.Bot):
         member_id: int | str | discord.Object,
         in_guild: bool = True,
     ) -> discord.Member | None:
+        """Get a member from cache or fetch if not found."""
         member_id = member_id.id if isinstance(member_id, discord.Object) else int(member_id)
 
         if not in_guild:
@@ -169,6 +177,7 @@ class Bot(commands.Bot):
         return members[0] if members else None
 
     async def getch(self, get_function, fetch_function, entity) -> Any:
+        """Get an entity from cache or fetch if not found."""
         entity = get_function(entity)
         if entity is not None:
             return entity
@@ -181,6 +190,7 @@ class Bot(commands.Bot):
         return None
 
     async def process_commands(self, message: Message) -> None:
+        """Process commands and send errors if any."""
         ctx: Context = await self.get_context(message, cls=Context)
 
         if bucket := self.spam_control.get_bucket(message):
@@ -194,6 +204,7 @@ class Bot(commands.Bot):
         await self.invoke(ctx)
 
     async def on_command_error(self, ctx: Context, error: commands.CommandError):
+        """Handle command errors."""
         await self.wait_until_ready()
 
         if hasattr(ctx.command, "on_error"):
@@ -252,9 +263,11 @@ class Bot(commands.Bot):
         # return await ctx.send(f"Error: {error}")
 
     async def get_active_timer(self, **filters: Any) -> dict:
+        """Get the active timer."""
         return await self.timers.find_one(filters, sort=[("expires_at", pymongo.ASCENDING)])
 
     async def wait_for_active_timers(self, **filters: Any) -> dict:
+        """Wait for the active timer."""
         timers = await self.get_active_timer(**filters)
         logger.info("received timers: %s", timers)
 
@@ -270,6 +283,7 @@ class Bot(commands.Bot):
         return await self.get_active_timer()
 
     async def dispatch_timers(self):
+        """Main loop for dispatching timers."""
         try:
             logger.info("Starting timer dispatch")
             while not self.is_closed():
@@ -292,9 +306,11 @@ class Bot(commands.Bot):
                 self.timer_task = self.loop.create_task(self.dispatch_timers())
 
         except asyncio.CancelledError:
+            logger.info("Timer dispatch cancelled")
             raise
 
     async def call_timer(self, collection, **data: Any):
+        """Call the timer and delete it."""
         deleted: DeleteResult = await collection.delete_one({"_id": data["_id"]})
 
         if deleted.deleted_count == 0:
@@ -322,6 +338,7 @@ class Bot(commands.Bot):
         extra: dict[str, Any] | None = None,
         **kw,
     ) -> InsertOneResult:
+        """Create a timer."""
         collection = self.timers
 
         embed: dict[str, Any] | None = kw.get("embed_like") or kw.get("embed")
@@ -368,6 +385,7 @@ class Bot(commands.Bot):
         return insert_data
 
     async def delete_timer(self, **kw: Any) -> DeleteResult:
+        """Delete a timer."""
         collection = self.timers
         data = await collection.delete_one({"_id": kw["_id"]})
         delete_count = data.deleted_count
@@ -380,6 +398,7 @@ class Bot(commands.Bot):
         return data
 
     async def restart_timer(self) -> bool:
+        """Restart the timer."""
         if self.timer_task:
             self.timer_task.cancel()
             self.timer_task = self.loop.create_task(self.dispatch_timers())
@@ -387,10 +406,15 @@ class Bot(commands.Bot):
         return False
 
     async def get_or_fetch_message(self, channel: discord.abc.Messageable, message_id: int) -> discord.Message | None:
+        """Try to get a message from the cache or fetch it if it is not in the cache."""
         try:
             return self.message_cache[message_id]
         except KeyError:
             pass
+        
+        if msg := discord.utils.get(self.cached_messages, id=message_id):
+            self.message_cache[message_id] = msg
+            return msg
 
         try:
             async for msg in channel.history(
@@ -406,9 +430,11 @@ class Bot(commands.Bot):
             return None
 
     async def on_error(self, event: str, *args, **kwargs) -> None:
+        """Log errors from events."""
         logger.error("Error in event %s.", event, exc_info=True)
 
     async def __before_invoke(self, ctx: Context) -> None:
+        """Check if the command is disabled in the guild."""
         guild_id = self.__config.guild_id
 
         if ctx.guild and guild_id and ctx.guild.id != guild_id and not await ctx.bot.is_owner(ctx.author):
@@ -416,6 +442,7 @@ class Bot(commands.Bot):
             raise commands.DisabledCommand("This command is disabled in this guild.")
 
     async def get_prefix(self, message: Message) -> list[str]:
+        """Get the prefix for the guild."""
         prefix = self.__config.prefix
         comp = re.compile(f"^({re.escape(prefix)}).*", flags=re.I)
         match = comp.match(message.content)
