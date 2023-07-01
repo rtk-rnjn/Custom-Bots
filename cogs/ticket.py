@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Callable, Optional, Type
+from typing import Callable, Optional
 
 import discord
 from discord.ext import commands, tasks
@@ -85,7 +85,9 @@ class Ticket(Cog):
 
         category = guild.get_channel(category_channel or 0)  # type: discord.CategoryChannel | None
         if category is None:
-            await user.send(f"Ticket category channel not found. Ask your Administrator to set it up.\n> Sent from `{guild.name}`")
+            await user.send(
+                f"Ticket category channel not found. Ask your Administrator to set it up.\n> Sent from `{guild.name}`"
+            )
             return
 
         role = guild.get_role(ping_role or 0)  # type: discord.Role | None
@@ -329,7 +331,7 @@ class Ticket(Cog):
             self._ticket_cache["ticket_ping_role"] = None
             await ctx.reply("Ticket ping role removed.")
             return
-        
+
         assert isinstance(role, discord.Role)
 
         self._ticket_cache["ticket_ping_role"] = role.id
@@ -355,7 +357,7 @@ class Ticket(Cog):
             self._ticket_cache["ticket_message"] = None
             await ctx.reply("Ticket message removed.")
             return
-        
+
         assert isinstance(message, discord.Message)
 
         self._ticket_cache["ticket_message"] = message.id

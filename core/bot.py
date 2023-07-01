@@ -242,7 +242,7 @@ class Bot(commands.Bot):
 
                 await self.call_timer(self.timers, **timers)
                 await asyncio.sleep(0)
-        except (OSError, discord.ConnectionClosed, ConnectionFailure) as e:
+        except (OSError, discord.ConnectionClosed, ConnectionFailure):
             logger.error("Error dispatching timer", exc_info=True)
             if self.timer_task:
                 self.timer_task.cancel()
@@ -283,7 +283,7 @@ class Bot(commands.Bot):
 
         embed: dict[str, Any] | None = kw.get("embed_like") or kw.get("embed")
         mod_action: dict[str, Any] | None = kw.get("mod_action")
-        cmd_exec_str: str | None = kw.get("cmd_exec_str")
+        kw.get("cmd_exec_str")
 
         # fmt: off
         post = {
