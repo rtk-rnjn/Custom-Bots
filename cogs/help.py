@@ -28,7 +28,7 @@ class Help(commands.HelpCommand):
     async def send_bot_help(self, mapping):
         ctx = self.context
         bot = ctx.bot
-        prefix = ctx.prefix
+        prefix = ctx.clean_prefix
         embed = discord.Embed(
             title="Help",
             description=f"Use `{prefix}help <command>` for more info on a command.\nUse `{prefix}help <category>` for more info on a category.",
@@ -46,7 +46,7 @@ class Help(commands.HelpCommand):
     async def send_cog_help(self, cog: Cog):
         ctx = self.context
         bot = ctx.bot
-        prefix = ctx.prefix
+        prefix = ctx.clean_prefix
         embed = discord.Embed(title=cog.qualified_name, description=cog.description)
         for command in cog.get_commands():
             if not command.hidden:
@@ -59,14 +59,14 @@ class Help(commands.HelpCommand):
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
         bot = ctx.bot
-        prefix = ctx.prefix
+        prefix = ctx.clean_prefix
         embed = discord.Embed(title=f"`{prefix}{command.name}`", description=command.help or "No description")
         await ctx.send(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
         ctx = self.context
         bot = ctx.bot
-        prefix = ctx.prefix
+        prefix = ctx.clean_prefix
         embed = discord.Embed(title=f"`{prefix}{group.name}`", description=group.help or "No description")
         for command in group.commands:
             if not command.hidden:
