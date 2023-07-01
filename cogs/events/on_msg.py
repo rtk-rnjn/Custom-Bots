@@ -34,10 +34,10 @@ class OnMessage(Cog):
             return
 
         data = UpdateOne(
-            {"id": self.bot.user.id},
+            {"channel_id": message.channel.id},
             {
                 "$inc": {
-                    "message_count": 1,
+                    "message_sent": 1,
                 },
                 "$addToSet": {
                     "messages": {
@@ -51,6 +51,7 @@ class OnMessage(Cog):
                         "message_author_bot": message.author.bot,
                         "message_content": message.content,
                         "message_created_at": message.created_at,
+                        "message_edited_at": message.edited_at,
                     },
                 },
                 "$pull": {"messages": {"message_created_at": {"$lt": message.created_at - datetime.timedelta(hours=12)}}},
@@ -62,16 +63,40 @@ class OnMessage(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
-        assert before.guild and before.author and self.bot.user
+        assert before.guild and self.bot.user
 
         if before.author.bot or before.content == after.content:
             return
 
         data = UpdateOne(
-            {"id": self.bot.user.id, "messages.message_id": before.id},
+            {"channel_id": after.channel.id, "messages.message_id": before.id},
             {
                 "$set": {
                     "messages.$.message_content": after.content,
+                    "messages.$.message_edited_at": after.edited_at,
+                },
+                "$pull": {"messages": {"message_created_at": {"$lt": after.created_at - datetime.timedelta(hours=12)}}},
+                "$inc": {
+                    "message_edited": 1,
+                },
+            },
+        )
+
+        self.__messages_sent.append(data)
+
+    @Cog.listener()
+    async def on_message_delete(self, message: discord.Message) -> None:
+        assert message.guild and self.bot.user
+
+        if message.author.bot:
+            return
+
+        data = UpdateOne(
+            {"channel_id": message.channel.id, "messages.message_id": message.id},
+            {
+                "$pull": {"messages": {"message_id": message.id}},
+                "$inc": {
+                    "message_deleted": 1,
                 },
             },
         )

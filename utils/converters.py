@@ -205,7 +205,7 @@ class ToAsync:
     def __init__(self, *, executor: ThreadPoolExecutor | None = None) -> None:
         self.executor = executor or ThreadPoolExecutor()
 
-    def __call__(self, blocking) -> Callable[..., Any]:
+    def __call__(self, blocking: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(blocking)
         async def wrapper(*args, **kwargs) -> Any:
             return await asyncio.get_event_loop().run_in_executor(self.executor, partial(blocking, *args, **kwargs))
