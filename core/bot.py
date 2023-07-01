@@ -17,6 +17,7 @@ from discord.message import Message
 from pymongo.errors import ConnectionFailure
 from pymongo.results import DeleteResult, InsertOneResult
 
+from cogs.help import Help
 from utils import Config, CustomFormatter, all_cogs
 
 from .context import Context
@@ -43,6 +44,7 @@ class Bot(commands.Bot):
             activity=config.activity,
             status=config.status,
             owner_ids=config.owner_ids,
+            help_command=Help(),
         )
         self.cogs_to_load = config.cogs
         self.session = None
@@ -107,6 +109,16 @@ class Bot(commands.Bot):
 
         logger.info("Logged in as %s", self.user)
         self.timer_task = self.loop.create_task(self.dispatch_timers())
+
+    async def on_message(self, message: discord.Message):
+        if message.author.bot:
+            return
+
+        if re.fullmatch(rf"<@!?{self.user.id}>", message.content):
+            await message.channel.send(f"Hello! My prefix is `{self.config.prefix}`")
+            return
+
+        await self.process_commands(message)
 
     async def get_or_fetch_member(
         self,
