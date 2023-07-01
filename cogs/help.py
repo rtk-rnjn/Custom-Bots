@@ -57,6 +57,9 @@ class Help(commands.HelpCommand):
             description=f"Use `{prefix}help <command>` for more info on a command.\nUse `{prefix}help <category>` for more info on a category.",
         )
         for cog, cmds in mapping.items():
+            filtered = await self.filter_commands(cmds, sort=True)
+            if not filtered:
+                continue
             cog_name = getattr(cog, "qualified_name", "No Category")
             embed.add_field(
                 name=cog_name,

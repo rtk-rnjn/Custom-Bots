@@ -35,7 +35,7 @@ from pymongo import MongoClient
 from .converters import convert_bool
 
 with contextlib.suppress(ImportError):
-    from dotenv import dotenv_values, load_dotenv  # type: ignore
+    from dotenv import dotenv_values, load_dotenv
 
     load_dotenv()
     dotenv_values(".env")
