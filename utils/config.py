@@ -57,8 +57,8 @@ class Config:
         }
         """
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        # for key, value in kwargs.items():
+        #     setattr(self, key, value)
 
     def __repr__(self) -> str:
         return f"<Config id={self.id} name={self.name}>"
