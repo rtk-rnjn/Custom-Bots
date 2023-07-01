@@ -22,7 +22,7 @@ with open("bots.json") as f:
 master_owner = bots["master_owner"]
 all_cogs = bots["all_cogs"]
 
-__all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV", "MONGO_CLIENT", "BOT_CONFIGS")
+__all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV", "MONGO_CLIENT", "BOT_CONFIGS", "Environment")
 
 
 class Config:
@@ -146,9 +146,10 @@ class Environment:
     def __getattr__(self, name: str) -> ANY:
         return self.parse_entity(self.__dict.get(name))
 
-    def parse_entity(self, entity: Any) -> ANY:
+    @staticmethod
+    def parse_entity(entity: Any, *, return_null: bool = True) -> ANY:
         if entity is None:
-            return Null()
+            return Null() if return_null else None
 
         entity = str(entity)
 
@@ -166,7 +167,7 @@ class Environment:
         if "," in entity:
             # list
             # recursive call
-            return [self.parse_entity(e) for e in entity.split(",")]
+            return [Environment.parse_entity(e) for e in entity.split(",")]
 
         return entity
 
@@ -175,6 +176,10 @@ class Environment:
 
 
 ENV = Environment()
+
+if not ENV.MONGO_URI:
+    raise EnvironmentError("MONGO_URI not found in .env or environment variables")
+
 MONGO_CLIENT = MongoClient(str(ENV.MONGO_URI))
 
 
