@@ -12,13 +12,19 @@ log = logging.getLogger("owner")
 
 
 class Owner(Cog):
+    """Owner only commands."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
     async def cog_check(self, ctx: Context) -> bool:
-        return await self.bot.is_owner(ctx.author)
+        if await self.bot.is_owner(ctx.author):
+            return True
 
-    @commands.command(aliases=["streaming", "listening", "watching"], hidden=True)
+        await ctx.send("You are not the owner of this bot.")
+        return False
+
+    @commands.command(aliases=["streaming", "listening", "watching"])
     async def playing(
         self,
         ctx: Context,
@@ -43,13 +49,13 @@ class Owner(Cog):
         log.info("presence changed to %s %s", ctx.invoked_with, media)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
-    @commands.command(hidden=True)
+    @commands.command()
     async def prefix(self, ctx: Context, *, prefix: str):
         """Change bot prefix.
-        
+
         Example:
         `[p]prefix !`
-        
+
         Note:
         - You must be owner of the bot to use this command.
         - The prefix can be any string.

@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ext.commands.errors import CommandError
 
 if TYPE_CHECKING:
-    from core import Bot, Cog, Context
+    from core import Cog, Context
 
 
 class Help(commands.HelpCommand):
@@ -27,14 +27,13 @@ class Help(commands.HelpCommand):
 
     async def send_bot_help(self, mapping):
         ctx = self.context
-        bot = ctx.bot
         prefix = ctx.clean_prefix
         embed = discord.Embed(
             title="Help",
             description=f"Use `{prefix}help <command>` for more info on a command.\nUse `{prefix}help <category>` for more info on a category.",
         )
-        for cog, commands in mapping.items():
-            filtered = await self.filter_commands(commands, sort=True)
+        for cog, cmds in mapping.items():
+            filtered = await self.filter_commands(cmds, sort=True)
             if filtered:
                 cog_name = getattr(cog, "qualified_name", "No Category")
                 embed.add_field(
@@ -45,28 +44,25 @@ class Help(commands.HelpCommand):
 
     async def send_cog_help(self, cog: Cog):
         ctx = self.context
-        bot = ctx.bot
         prefix = ctx.clean_prefix
         embed = discord.Embed(title=cog.qualified_name, description=cog.description)
         for command in cog.get_commands():
             if not command.hidden:
                 embed.add_field(
                     name=f"`{prefix}{command.name}`",
-                    value=command.help or "No description",
+                    value=command.short_doc or "No description",
                     inline=False,
                 )
         await ctx.send(embed=embed)
 
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
-        bot = ctx.bot
         prefix = ctx.clean_prefix
         embed = discord.Embed(title=f"`{prefix}{command.name}`", description=command.help or "No description")
         await ctx.send(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
         ctx = self.context
-        bot = ctx.bot
         prefix = ctx.clean_prefix
         embed = discord.Embed(title=f"`{prefix}{group.name}`", description=group.help or "No description")
         for command in group.commands:
@@ -80,6 +76,4 @@ class Help(commands.HelpCommand):
 
     async def send_error_message(self, error):
         ctx = self.context
-        bot = ctx.bot
-        prefix = ctx.prefix
         await ctx.send(f"Well this is awkward...```py\n{error}```")

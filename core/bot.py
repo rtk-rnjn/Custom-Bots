@@ -7,7 +7,7 @@ import logging.handlers
 import os
 import re
 from collections import Counter
-from typing import Any, List, Union
+from typing import Any
 
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
@@ -36,6 +36,7 @@ logger.addHandler(handler)
 
 class Bot(commands.Bot):
     mongo: Any
+
     def __init__(self, config: Config, *args, **kwargs):
         super().__init__(
             command_prefix=self.get_prefix,
@@ -112,7 +113,7 @@ class Bot(commands.Bot):
         self.timer_task = self.loop.create_task(self.dispatch_timers())
 
     async def on_message(self, message: discord.Message):
-        if message.author.bot:
+        if message.author.bot or not message.guild:
             return
 
         if re.fullmatch(rf"<@!?{self.user.id}>", message.content):

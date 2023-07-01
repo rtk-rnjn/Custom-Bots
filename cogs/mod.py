@@ -30,6 +30,8 @@ HELP_MESSAGE_KICK_BAN = """
 
 
 class Mod(Cog):
+    """Moderation commands."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 

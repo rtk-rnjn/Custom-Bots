@@ -8,7 +8,7 @@ import discord
 from discord.ext import tasks
 from pymongo import UpdateOne
 
-from core import Bot, Cog, Context
+from core import Bot, Cog
 
 log = logging.getLogger("events.on_msg")
 

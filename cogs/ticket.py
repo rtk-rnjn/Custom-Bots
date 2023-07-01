@@ -16,6 +16,8 @@ CACHE_HINT = dict[str, int | list[dict[str, int | str | list[int] | None]] | Non
 
 
 class Tickets(Cog):
+    """Ticket related commands."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.ticket_collection = self.bot.ticket
@@ -151,7 +153,7 @@ class Tickets(Cog):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_new(self, ctx: Context) -> None:
         """Create a new ticket.
-        
+
         Bot must have `Manage Channels` and `Manage Roles` permissions.
         You can only have one active ticket at a time.
 
@@ -172,9 +174,9 @@ class Tickets(Cog):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_close(self, ctx: Context) -> None:
         """Close a ticket.
-        
+
         Bot must have `Manage Channels` and `Manage Roles` permissions.
-        
+
         Example:
         - `[p]ticket close`
         """
@@ -198,9 +200,9 @@ class Tickets(Cog):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_add(self, ctx: Context, *, member: discord.Member) -> None:
         """Add a member to your ticket.
-        
+
         Bot must have `Manage Channels` and `Manage Roles` permissions.
-        
+
         Example:
         - `[p]ticket add @member`
         """
@@ -240,9 +242,9 @@ class Tickets(Cog):
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_remove(self, ctx: Context, *, member: discord.Member) -> None:
         """Remove a member from your ticket
-        
+
         Bot must have `Manage Channels` and `Manage Roles` permissions.
-        
+
         Example:
         - `[p]ticket remove @member`
         """
@@ -301,7 +303,7 @@ class Tickets(Cog):
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup(self, ctx: Context) -> None:
         """Ticket setup walkthrough.
-        
+
         Invoker must have `Manage Server` permissions.
 
         Example:
@@ -360,9 +362,9 @@ class Tickets(Cog):
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_pingrole(self, ctx: Context, *, role: Optional[RoleID] = None) -> None:
         """Set the ping role for tickets.
-        
+
         Invoker must have `Manage Server` permissions.
-        
+
         Example:
         - `[p]ticket setup pingrole @role`
         """
@@ -380,9 +382,9 @@ class Tickets(Cog):
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_category(self, ctx: Context, *, category: Optional[discord.CategoryChannel] = None) -> None:
         """Set the ticket category.
-        
+
         Invoker must have `Manage Server` permissions.
-        
+
         Example:
         - `[p]ticket setup category #category`
         - `[p]ticket setup category 123456789`
@@ -399,9 +401,9 @@ class Tickets(Cog):
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_message(self, ctx: Context, *, message: Optional[MessageID] = None) -> None:
         """Set the ticket message.
-        
+
         Invoker must have `Manage Server` permissions.
-        
+
         Example:
         - `[p]ticket setup message 123456789`
         - `[p]ticket setup message https://discord.com/channels/123/456/789`
@@ -420,9 +422,9 @@ class Tickets(Cog):
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_logchannel(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:
         """Set the ticket log channel
-        
+
         Invoker must have `Manage Server` permissions.
-        
+
         Example:
         - `[p]ticket setup logchannel #channel`
         """

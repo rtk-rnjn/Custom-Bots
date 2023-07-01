@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from typing import Optional
 
 import discord
@@ -12,6 +13,8 @@ log = logging.getLogger("meta")
 
 
 class Meta(Cog):
+    """Commands for getting information about the bot or a user or any other meta stuff."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
@@ -124,6 +127,164 @@ class Meta(Cog):
             )
         if role.icon:
             embed.set_thumbnail(url=role.icon.url)
+        await ctx.reply(embed=embed)
+
+    @commands.command(name="avatar", aliases=["av"])
+    async def avatar(self, ctx: Context, *, member: Optional[discord.Member] = None):
+        """Returns the avatar of the user"""
+        target = member or ctx.author
+        embed = discord.Embed(
+            title=f"{target}'s Avatar",
+            color=target.color,
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.set_image(url=target.display_avatar.url)
+        await ctx.reply(embed=embed)
+
+    @commands.command(aliases=["guildavatar", "serverlogo", "servericon"])
+    async def guildicon(self, ctx: Context):
+        """
+        Get the freaking server icon
+        """
+        assert ctx.guild is not None
+
+        if not hasattr(ctx.guild.icon, "url"):
+            return await ctx.reply(f"{ctx.author.mention} {ctx.guild.name} has no icon yet!")
+
+        guild = ctx.guild
+        embed = discord.Embed(timestamp=discord.utils.utcnow())
+        embed.set_image(url=guild.icon.url)  # type: ignore
+
+        await ctx.reply(embed=embed)
+
+    @commands.command(name="serverinfo", aliases=["guildinfo", "si", "gi"])
+    async def server_info(self, ctx: Context):
+        """
+        Get the basic stats about the server
+        """
+        guild = ctx.guild
+        embed: discord.Embed = discord.Embed(
+            title=f"Server Info: {ctx.guild.name}",
+            colour=ctx.guild.owner.colour,
+            timestamp=discord.utils.utcnow(),
+        )
+        if ctx.guild.icon:
+            embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_footer(text=f"ID: {ctx.guild.id}")
+        statuses = [
+            len(list(filter(lambda m: str(m.status) == "online", ctx.guild.members))),
+            len(list(filter(lambda m: str(m.status) == "idle", ctx.guild.members))),
+            len(list(filter(lambda m: str(m.status) == "dnd", ctx.guild.members))),
+            len(list(filter(lambda m: str(m.status) == "offline", ctx.guild.members))),
+        ]
+
+        fields = [
+            ("Owner", ctx.guild.owner, True),
+            ("Region", "Deprecated", True),
+            ("Created at", f"{discord.utils.format_dt(ctx.guild.created_at)}", True),
+            (
+                "Total Members",
+                (
+                    f"Members: {len(ctx.guild.members)}\n"
+                    f"Humans: {len(list(filter(lambda m: not m.bot, ctx.guild.members)))}\n"
+                    f"Bots: {len(list(filter(lambda m: m.bot, ctx.guild.members)))}"
+                ),
+                True,
+            ),
+            (
+                "Total channels",
+                (
+                    f"Categories: {len(ctx.guild.categories)}\n"
+                    f"Text: {len(ctx.guild.text_channels)}\n"
+                    f"Voice:{len(ctx.guild.voice_channels)}"
+                ),
+                True,
+            ),
+            (
+                "General",
+                (
+                    f"Roles: {len(ctx.guild.roles)}\n"
+                    f"Emojis: {len(ctx.guild.emojis)}\n"
+                    f"Boost Level: {ctx.guild.premium_tier}"
+                ),
+                True,
+            ),
+            (
+                "Statuses",
+                (
+                    f":green_circle: {statuses[0]}\n"
+                    f":yellow_circle: {statuses[1]}\n"
+                    f":red_circle: {statuses[2]}\n"
+                    f":black_circle: {statuses[3]} [Blame Discord]"
+                ),
+                True,
+            ),
+        ]
+
+        for name, value, inline in fields:
+            embed.add_field(name=name, value=value, inline=inline)
+
+        features = set(ctx.guild.features)
+        all_features = {
+            "PARTNERED": "Partnered",
+            "VERIFIED": "Verified",
+            "DISCOVERABLE": "Server Discovery",
+            "COMMUNITY": "Community Server",
+            "FEATURABLE": "Featured",
+            "WELCOME_SCREEN_ENABLED": "Welcome Screen",
+            "INVITE_SPLASH": "Invite Splash",
+            "VIP_REGIONS": "VIP Voice Servers",
+            "VANITY_URL": "Vanity Invite",
+            "COMMERCE": "Commerce",
+            "LURKABLE": "Lurkable",
+            "NEWS": "News Channels",
+            "ANIMATED_ICON": "Animated Icon",
+            "BANNER": "Banner",
+        }
+
+        if info := [f":ballot_box_with_check: {label}" for feature, label in all_features.items() if feature in features]:
+            embed.add_field(name="Features", value="\n".join(info))
+
+        if guild.premium_tier != 0:
+            boosts = f"Level {guild.premium_tier}\n{guild.premium_subscription_count} boosts"
+            last_boost = max(guild.members, key=lambda m: m.premium_since or guild.created_at)
+            if last_boost.premium_since is not None:
+                boosts = f"{boosts}\nLast Boost: {last_boost} ({discord.utils.format_dt(last_boost.premium_since, 'R')})"
+            embed.add_field(name="Boosts", value=boosts, inline=True)
+        else:
+            embed.add_field(name="Boosts", value="Level 0", inline=True)
+
+        emoji_stats = Counter()
+        for emoji in guild.emojis:
+            if emoji.animated:
+                emoji_stats["animated"] += 1
+                emoji_stats["animated_disabled"] += not emoji.available
+            else:
+                emoji_stats["regular"] += 1
+                emoji_stats["disabled"] += not emoji.available
+
+        fmt = (
+            f'Regular: {emoji_stats["regular"]}/{guild.emoji_limit}\n'
+            f'Animated: {emoji_stats["animated"]}/{guild.emoji_limit}\n'
+        )
+        if emoji_stats["disabled"] or emoji_stats["animated_disabled"]:
+            fmt = f'{fmt}Disabled: {emoji_stats["disabled"]} regular, {emoji_stats["animated_disabled"]} animated\n'
+
+        fmt = f"{fmt}Total Emoji: {len(guild.emojis)}/{guild.emoji_limit*2}"
+        embed.add_field(name="Emoji", value=fmt, inline=True)
+
+        if ctx.guild.me.guild_permissions.ban_members:
+            embed.add_field(
+                name="Banned Members",
+                value=f"{len([_ async for _ in ctx.guild.bans(limit=1000)])}+",
+                inline=True,
+            )
+        if ctx.guild.me.guild_permissions.manage_guild:
+            embed.add_field(name="Invites", value=f"{len(await ctx.guild.invites())}", inline=True)
+
+        if ctx.guild.banner:
+            embed.set_image(url=ctx.guild.banner.url)
+
         await ctx.reply(embed=embed)
 
 

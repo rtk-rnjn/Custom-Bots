@@ -12,6 +12,8 @@ from utils import ShortTime
 
 
 class Giveaway(Cog):
+    """Giveaway commands"""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
@@ -274,7 +276,7 @@ class Giveaway(Cog):
 
         The invoker must have `Manage Server` permissions to use this command.
         This command will end a giveaway and select a winner.
-        
+
         Example:
         `[p]gend 1234567890`
         """
@@ -300,7 +302,7 @@ class Giveaway(Cog):
     async def glist_command(self, ctx: Context) -> None:
         """Show the latest ongoing giveaways.
 
-        The invoker must have `Manage Server` permissions to use this command.        
+        The invoker must have `Manage Server` permissions to use this command.
         """
         if data := await self.bot.giveaways.find_one(
             {"status": "ONGOING", "guild_id": ctx.guild.id, "bot_id": self.bot.user.id}  # type: ignore
@@ -316,7 +318,7 @@ class Giveaway(Cog):
 
         The invoker must have `Manage Server` permissions to use this command.
         This command will delete a giveaway.
-        
+
         Example:
         `[p]gdelete 1234567890`
         """
@@ -340,7 +342,7 @@ class Giveaway(Cog):
 
         The invoker must have `Manage Server` permissions to use this command.
         This command will drop a giveaway. A quick way to start a giveaway.
-        
+
         The duration can be specified as a number followed by a unit.
         Valid units are `s`, `m`, `h`, `d`, `w`
 

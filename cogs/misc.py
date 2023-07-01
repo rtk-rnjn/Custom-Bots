@@ -15,6 +15,8 @@ log = logging.getLogger("misc")
 
 
 class Misc(Cog):
+    """Miscellaneous commands."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
 
@@ -27,7 +29,7 @@ class Misc(Cog):
         data: Optional[str] = None,
     ):
         """A nice command to make custom embeds.
-        
+
         Embed can also be created from JSON object.
         Example:
         `[p]embed {"title": "Hello", "description": "World!"}`
