@@ -33,13 +33,11 @@ class Help(commands.HelpCommand):
             description=f"Use `{prefix}help <command>` for more info on a command.\nUse `{prefix}help <category>` for more info on a category.",
         )
         for cog, cmds in mapping.items():
-            filtered = await self.filter_commands(cmds, sort=True)
-            if filtered:
-                cog_name = getattr(cog, "qualified_name", "No Category")
-                embed.add_field(
-                    name=cog_name,
-                    value=f"`{prefix}help {cog_name.lower()}`",
-                )
+            cog_name = getattr(cog, "qualified_name", "No Category")
+            embed.add_field(
+                name=cog_name,
+                value=f"`{prefix}help {cog_name.lower()}`",
+            )
         await ctx.send(embed=embed)
 
     async def send_cog_help(self, cog: Cog):
@@ -49,7 +47,7 @@ class Help(commands.HelpCommand):
         for command in cog.get_commands():
             if not command.hidden:
                 embed.add_field(
-                    name=f"`{prefix}{command.name}`",
+                    name=f"`{prefix}{command.qualified_name}`",
                     value=command.short_doc or "No description",
                     inline=False,
                 )
@@ -58,17 +56,17 @@ class Help(commands.HelpCommand):
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
         prefix = ctx.clean_prefix
-        embed = discord.Embed(title=f"`{prefix}{command.name}`", description=command.help or "No description")
+        embed = discord.Embed(title=f"`{prefix}{command.qualified_name}`", description=command.help or "No description")
         await ctx.send(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
         ctx = self.context
         prefix = ctx.clean_prefix
-        embed = discord.Embed(title=f"`{prefix}{group.name}`", description=group.help or "No description")
+        embed = discord.Embed(title=f"`{prefix}{group.qualified_name}`", description=group.help or "No description")
         for command in group.commands:
             if not command.hidden:
                 embed.add_field(
-                    name=f"`{prefix}{command.name}`",
+                    name=f"`{prefix}{command.qualified_name}`",
                     value=command.short_doc or "No description",
                     inline=False,
                 )
