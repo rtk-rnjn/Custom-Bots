@@ -377,7 +377,7 @@ class Bot(commands.Bot):
             await ctx.reply("This command is disabled in this guild.")
             raise commands.DisabledCommand("This command is disabled in this guild.")
 
-    def get_prefix(self, message: Message) -> list[str]:
+    async def get_prefix(self, message: Message) -> list[str]:
         prefix = self.__config.prefix
         comp = re.compile(f"^({re.escape(prefix)}).*", flags=re.I)
         match = comp.match(message.content)
