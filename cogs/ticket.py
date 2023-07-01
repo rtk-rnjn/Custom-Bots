@@ -57,12 +57,14 @@ class Tickets(Cog):
 
     @tasks.loop(minutes=5)
     async def database_updater(self) -> None:
+        log.info("Updating ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
 
     async def cog_load(self):
         await self._load_ticket_cache()
 
     async def cog_unload(self):
+        log.info("Saving ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
 
         if self.database_updater.is_running():
@@ -440,4 +442,4 @@ class Tickets(Cog):
 
 
 async def setup(bot: Bot) -> None:
-    await bot.add_cog(Ticket(bot))
+    await bot.add_cog(Tickets(bot))

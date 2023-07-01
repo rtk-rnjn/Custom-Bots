@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 
 import discord
@@ -41,15 +42,18 @@ class OnMessage(Cog):
                 "$addToSet": {
                     "messages": {
                         "message_id": message.id,
+                        "message_channel_id": message.channel.id,
+                        "message_channel_name": str(message.channel),
+                        "message_guild_id": message.guild.id,
                         "message_author_id": message.author.id,
-                        "message_author_name": message.author.name,
-                        # "message_author_discriminator": message.author.discriminator,
+                        "message_author_name": str(message.author),
                         "message_author_avatar": message.author.display_avatar.url,
                         "message_author_bot": message.author.bot,
                         "message_content": message.content,
                         "message_created_at": message.created_at,
                     },
                 },
+                "$pull": {"messages": {"message_created_at": {"$lt": message.created_at - datetime.timedelta(hours=12)}}},
             },
             upsert=True,
         )
