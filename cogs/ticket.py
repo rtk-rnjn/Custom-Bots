@@ -15,7 +15,7 @@ log = logging.getLogger("ticket")
 CACHE_HINT = dict[str, int | list[dict[str, int | str | list[int] | None]] | None]
 
 
-class Ticket(Cog):
+class Tickets(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.ticket_collection = self.bot.ticket
@@ -137,7 +137,7 @@ class Ticket(Cog):
 
         self._ticket_cache["active_tickets"].remove(ticket)
 
-    @commands.group(name="ticket", aliases=["tickets"], invoke_without_command=True)
+    @commands.group(name="ticket", aliases=["tick"], invoke_without_command=True)
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     async def ticket(self, ctx: Context) -> None:
         """Ticket related commands"""
