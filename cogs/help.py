@@ -53,6 +53,7 @@ class Help(commands.HelpCommand):
                 embed.add_field(
                     name=f"`{prefix}{command.name}`",
                     value=command.help or "No description",
+                    inline=False,
                 )
         await ctx.send(embed=embed)
 
@@ -72,7 +73,8 @@ class Help(commands.HelpCommand):
             if not command.hidden:
                 embed.add_field(
                     name=f"`{prefix}{command.name}`",
-                    value=command.help or "No description",
+                    value=command.short_doc or "No description",
+                    inline=False,
                 )
         await ctx.send(embed=embed)
 

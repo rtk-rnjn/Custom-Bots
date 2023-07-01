@@ -150,7 +150,14 @@ class Tickets(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_new(self, ctx: Context) -> None:
-        """Create a new ticket"""
+        """Create a new ticket.
+        
+        Bot must have `Manage Channels` and `Manage Roles` permissions.
+        You can only have one active ticket at a time.
+
+        Example:
+        - `[p]ticket new`
+        """
         active_tickets = self._ticket_cache["active_tickets"] or []  # type: list[dict]
         if ctx.author.id in [ticket["ticket_owner"] for ticket in active_tickets]:
             await ctx.reply(f"{ctx.author.mention} you already have an active ticket.")
@@ -164,7 +171,13 @@ class Tickets(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_close(self, ctx: Context) -> None:
-        """Close a ticket"""
+        """Close a ticket.
+        
+        Bot must have `Manage Channels` and `Manage Roles` permissions.
+        
+        Example:
+        - `[p]ticket close`
+        """
         active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
         ticket = next(
             (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
@@ -184,7 +197,13 @@ class Tickets(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_add(self, ctx: Context, *, member: discord.Member) -> None:
-        """Add a member to your ticket"""
+        """Add a member to your ticket.
+        
+        Bot must have `Manage Channels` and `Manage Roles` permissions.
+        
+        Example:
+        - `[p]ticket add @member`
+        """
         active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
         ticket = next(
             (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
@@ -220,7 +239,13 @@ class Tickets(Cog):
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_remove(self, ctx: Context, *, member: discord.Member) -> None:
-        """Remove a member from your ticket"""
+        """Remove a member from your ticket
+        
+        Bot must have `Manage Channels` and `Manage Roles` permissions.
+        
+        Example:
+        - `[p]ticket remove @member`
+        """
         active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
         ticket = next(
             (ticket for ticket in active_tickets if ticket["ticket_owner"] == ctx.author.id),
@@ -275,7 +300,13 @@ class Tickets(Cog):
     @ticket.group(name="setup", aliases=["config"], invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup(self, ctx: Context) -> None:
-        """Ticket setup walkthrough"""
+        """Ticket setup walkthrough.
+        
+        Invoker must have `Manage Server` permissions.
+
+        Example:
+        - `[p]ticket setup`
+        """
         if not ctx.invoked_subcommand:
 
             def check(m: discord.Message) -> bool:
@@ -328,7 +359,13 @@ class Tickets(Cog):
     @ticket_setup.command(name="pingrole", aliases=["ping"])
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_pingrole(self, ctx: Context, *, role: Optional[RoleID] = None) -> None:
-        """Set the ping role for tickets"""
+        """Set the ping role for tickets.
+        
+        Invoker must have `Manage Server` permissions.
+        
+        Example:
+        - `[p]ticket setup pingrole @role`
+        """
         if role is None:
             self._ticket_cache["ticket_ping_role"] = None
             await ctx.reply("Ticket ping role removed.")
@@ -342,7 +379,14 @@ class Tickets(Cog):
     @ticket_setup.command(name="category", aliases=["cat"])
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_category(self, ctx: Context, *, category: Optional[discord.CategoryChannel] = None) -> None:
-        """Set the ticket category"""
+        """Set the ticket category.
+        
+        Invoker must have `Manage Server` permissions.
+        
+        Example:
+        - `[p]ticket setup category #category`
+        - `[p]ticket setup category 123456789`
+        """
         if category is None:
             self._ticket_cache["ticket_category_channel"] = None
             await ctx.reply("Ticket category removed.")
@@ -354,7 +398,14 @@ class Tickets(Cog):
     @ticket_setup.command(name="message", aliases=["msg"])
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_message(self, ctx: Context, *, message: Optional[MessageID] = None) -> None:
-        """Set the ticket message"""
+        """Set the ticket message.
+        
+        Invoker must have `Manage Server` permissions.
+        
+        Example:
+        - `[p]ticket setup message 123456789`
+        - `[p]ticket setup message https://discord.com/channels/123/456/789`
+        """
         if message is None:
             self._ticket_cache["ticket_message"] = None
             await ctx.reply("Ticket message removed.")
@@ -368,7 +419,13 @@ class Tickets(Cog):
     @ticket_setup.command(name="logchannel", aliases=["log"])
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_logchannel(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:
-        """Set the ticket log channel"""
+        """Set the ticket log channel
+        
+        Invoker must have `Manage Server` permissions.
+        
+        Example:
+        - `[p]ticket setup logchannel #channel`
+        """
         if channel is None:
             self._ticket_cache["ticket_log_channel"] = None
             await ctx.reply("Ticket log channel removed.")

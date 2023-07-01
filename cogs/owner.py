@@ -28,11 +28,12 @@ class Owner(Cog):
     ):
         """Update bot presence accordingly to invoke command
 
-        This is equivalent to:
-        ```py
-        p_types = {'playing': 0, 'streaming': 1, 'listening': 2, 'watching': 3}
-        await ctx.bot.change_presence(discord.Activity(name=media, type=p_types[ctx.invoked_with]))
-        ```
+        Examples:
+        `[p]playing online Hello World!`
+        `[p]listening dnd Hello World!`
+
+        The default status is dnd. Command can also be used as:
+        `[p]playing Hello World!`
         """
         p_types = {"playing": 0, "streaming": 1, "listening": 2, "watching": 3, None: 0}
         await ctx.bot.change_presence(
@@ -44,7 +45,16 @@ class Owner(Cog):
 
     @commands.command(hidden=True)
     async def prefix(self, ctx: Context, *, prefix: str):
-        """Change bot prefix"""
+        """Change bot prefix.
+        
+        Example:
+        `[p]prefix !`
+        
+        Note:
+        - You must be owner of the bot to use this command.
+        - The prefix can be any string.
+        - Prefix will be case insensitive.
+        """
         self.bot.config.set_prefix(prefix)
         log.info("prefix changed to %s", prefix)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")

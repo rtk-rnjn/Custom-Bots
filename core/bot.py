@@ -35,6 +35,7 @@ logger.addHandler(handler)
 
 
 class Bot(commands.Bot):
+    mongo: Any
     def __init__(self, config: Config, *args, **kwargs):
         super().__init__(
             command_prefix=self.get_prefix,

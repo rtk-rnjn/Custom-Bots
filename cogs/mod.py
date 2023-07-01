@@ -242,7 +242,23 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
-        """Kick a user from the server."""
+        """Kick a user from the server.
+
+        Both the bot and the user invoking the command must have the `Kick Members` permission.
+        The bot will not kick users under the following conditions:
+        - The user is the owner of the server
+        - The invoker is user themselves
+        - The invoker top role position is equal to or lower than the user top role position
+        - The bot top role position is equal to or lower than the user top role position
+
+        Example:
+        `[p]kick @user spamming` - kicks the user for "spamming"
+        `[p]kick 1234567890 idk` - kicks the user with the ID 1234567890 for "idk"
+
+        Providing reason is Optional. Can be left blank. Exmaple:
+        `[p]kick @user` - kicks the user for no reason
+        `[p]kick 1234567890` - kicks the user with the ID 1234567890 for no reason
+        """
         if await self.kick_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Kicked **{user}** for reason: **{reason}**")
         else:
@@ -258,7 +274,23 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
-        """Ban a user from the server."""
+        """Ban a user from the server.
+
+        Both the bot and the user invoking the command must have the `Ban Members` permission.
+        The bot will not ban users under the following conditions:
+        - The user is the owner of the server
+        - The invoker is user themselves
+        - The invoker top role position is equal to or lower than the user top role position
+        - The bot top role position is equal to or lower than the user top role position
+
+        Example:
+        `[p]ban @user spamming` - bans the user for "spamming"
+        `[p]ban 1234567890 idk` - bans the user with the ID 1234567890 for "idk"
+
+        Providing reason is Optional. Can be left blank. Exmaple:
+        `[p]ban @user` - bans the user for no reason
+        `[p]ban 1234567890` - bans the user with the ID 1234567890 for no reason
+        """
         if await self.ban_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Banned **{user}** for reason: **{reason}**")
         else:
@@ -274,6 +306,18 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
+        """Unban a user from the server.
+
+        Both the bot and the user invoking the command must have the `Ban Members` permission.
+
+        Example:
+        `[p]unban @user appeal accepted` - unbans the user for "appeal accepted"
+        `[p]unban 1234567890 idk` - unbans the user with the ID 1234567890 for "idk"
+
+        Providing reason is Optional. Can be left blank. Exmaple:
+        `[p]unban @user` - unbans the user for no reason
+        `[p]unban 1234567890` - unbans the user with the ID 1234567890 for no reason
+        """
         if await self.unban_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Unbanned **{user}** for reason: **{reason}**")
         else:
@@ -289,7 +333,25 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
-        """Lock a channel."""
+        """Lock the text channel or voice channel the command is invoked in or the channel specified.
+
+        Both the bot and the user invoking the command must have the `Manage Channels` permission.
+
+        What bot does:-
+
+        - Text Channel:
+            - Denies `Send Messages` permission for @everyone role
+        - Voice Channel:
+            - Denies `Speak` permission for @everyone role
+
+        Example:
+        `[p]lock #general spamming` - locks the #general channel for "spamming"
+        `[p]lock 1234567890 idk` - locks the channel with the ID 1234567890 for "idk"
+
+        Providing reason is Optional. Can be left blank. Exmaple:
+        `[p]lock #general` - locks the #general channel for no reason
+        `[p]lock 1234567890` - locks the channel with the ID 1234567890 for no reason
+        """
         channel = channel or ctx.channel  # type: ignore
         if await self.lock_channel_method(channel=channel, reason=reason):  # type: ignore
             await ctx.send(f"Locked **{channel}**.")
@@ -306,7 +368,25 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
-        """Unlock a channel."""
+        """Unlock the text channel or voice channel the command is invoked in or the channel specified.
+
+        Both the bot and the user invoking the command must have the `Manage Channels` permission.
+
+        What bot does:-
+
+        - Text Channel:
+            - Allows `Send Messages` permission for @everyone role
+        - Voice Channel:
+            - Allows `Speak` permission for @everyone role
+
+        Example:
+        `[p]unlock #general spamming` - unlocks the #general channel for "spamming"
+        `[p]unlock 1234567890 idk` - unlocks the channel with the ID 1234567890 for "idk"
+
+        Providing reason is Optional. Can be left blank. Exmaple:
+        `[p]unlock #general` - unlocks the #general channel for no reason
+        `[p]unlock 1234567890` - unlocks the channel with the ID 1234567890 for no reason
+        """
         channel = channel or ctx.channel  # type: ignore
         if await self.unlock_channel_method(channel=channel, reason=reason):  # type: ignore
             await ctx.send(f"Unlocked **{channel}**.")
@@ -316,15 +396,26 @@ class Mod(Cog):
     @commands.group(name="purge", invoke_without_command=True)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def purge_command(self, ctx: Context, limit: int = 100) -> None:
-        """Purge messages from a channel."""
+    async def purge_command(self, ctx: Context, limit: Optional[int] = 100) -> None:
+        """Purge messages from a channel.
+
+        Both the bot and the user invoking the command must have the `Manage Messages` permission.
+        And the bot must have the `Read Message History` permission.
+
+        Example:
+        `[p]purge 50` - purges last 50 messages
+        `[p]purge 100` - purges last 100 messages
+
+        Providing limit is Optional. Can be left blank. Exmaple:
+        `[p]purge` - purges last 100 messages
+        """
         if ctx.invoked_subcommand is None:
 
             def check(message: discord.Message) -> bool:
                 return True
 
-            if await self.purge_method(ctx, limit, check):
-                await ctx.send(f"Purged **{limit}** messages.")
+            if await self.purge_method(ctx, limit or 100, check):
+                await ctx.send(f"Purged **{limit or 100}** messages.")
             else:
                 await ctx.send("Failed purging messages. Try smaller amount.")
 
@@ -424,7 +515,7 @@ class Mod(Cog):
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
     async def _all(self, ctx: Context, search: int = 100):
-        """Removes all messages."""
+        """Removes all messages. This is equivalent to `[p]purge` command."""
         await self.purge_method(ctx, search, lambda e: True)
 
     @purge_command.command(name="custom")
@@ -456,6 +547,13 @@ class Mod(Cog):
         `--reactions`: Check if the message has reactions
         `--or`: Use logical OR for all options.
         `--not`: Use logical NOT for all options.
+
+        Examples:
+        - `[p]purge custom --user @user --contains "hello world" --embeds`
+            - This will remove all messages by @user that contain "hello world" and have embeds.
+
+        - `[p]purge custom --contains cum --not --user @user`
+            - This will remove all messages that contain "cum" but are not by @user.
         """
 
         parser = Arguments(add_help=False, allow_abbrev=False)
@@ -535,7 +633,7 @@ class Mod(Cog):
         await self.purge_method(ctx, args.search, predicate, before=args.before, after=args.after)
 
     @commands.command(name="timeout", aliases=["mute"])
-    @commands.has_permissions(manage_roles=True, manage_messages=True, moderate_members=True)
+    @commands.has_permissions(manage_messages=True, moderate_members=True)
     @commands.bot_has_guild_permissions(moderate_members=True)
     async def timeout(
         self,
@@ -545,7 +643,20 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ):
-        """Timeout a user for a specified duration."""
+        """Timeout a user for a specified duration.
+
+        Bot must have `Time Out Members` permission.
+        Also invoker must have `Time Out Members` and `Manage Messages` permissions.
+
+        The duration can be specified as a number followed by a unit.
+        Valid units are `s`, `m`, `h`, `d`, `w`
+
+        For example, `1h` would be 1 hour, `5m` would be 5 minutes, `2d` would be 2 days.
+
+        Examples:
+        - `[p]timeout @user 1h`
+            - This will time out @user for 1 hour.
+        """
 
         if await self.timeout_method(user=user, duration=duration.dt, reason=reason, guild=ctx.guild):  # type: ignore
             await ctx.send(
@@ -553,7 +664,7 @@ class Mod(Cog):
             )
 
     @commands.command(name="untimeout", aliases=["unmute"])
-    @commands.has_permissions(manage_roles=True, manage_messages=True, moderate_members=True)
+    @commands.has_permissions(manage_messages=True, moderate_members=True)
     @commands.bot_has_guild_permissions(moderate_members=True)
     async def untimeout(
         self,
@@ -562,7 +673,15 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
     ):
-        """Untimeout a user."""
+        """Untimeout a user.
+
+        Bot must have `Time Out Members` permission.
+        Also invoker must have `Time Out Members` and `Manage Messages` permissions.
+
+        Examples:
+        - `[p]untimeout @user`
+            - This will remove the timeout from @user.
+        """
 
         if await self.unmute_method(user=user, reason=reason, guild=ctx.guild):  # type: ignore
             await ctx.send(f"Successfully removed timeout from {user}.")
@@ -571,12 +690,18 @@ class Mod(Cog):
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def add(self, ctx: Context) -> None:
-        """Add a role to a user."""
+        """Add a role to a user.
+
+        Bot must have `Manage Roles` permission.
+        Also invoker must have `Manage Roles` permission.
+        """
 
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
     @add.command(name="role")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
     async def add_role(
         self,
         ctx: Context,
@@ -585,7 +710,18 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason],
     ) -> None:
-        """Add a role to a user."""
+        """Add a role to a user.
+
+        Bot must have `Manage Roles` permission.
+        Also invoker must have `Manage Roles` permission.
+
+        Examples:
+        - `[p]add role @user @role reason`
+            - This will add @role to @user with the reason `reason`.
+
+        Notes:
+        - The reason is optional.
+        """
 
         if await self.add_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Successfully added {role} to {user}.")
@@ -594,12 +730,18 @@ class Mod(Cog):
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_guild_permissions(manage_roles=True)
     async def remove(self, ctx: Context) -> None:
-        """Remove a role from a user."""
+        """Remove a role from a user.
+
+        Bot must have `Manage Roles` permission.
+        Also invoker must have `Manage Roles` permission.
+        """
 
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
     @remove.command(name="role")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_guild_permissions(manage_roles=True)
     async def remove_role(
         self,
         ctx: Context,
@@ -608,12 +750,22 @@ class Mod(Cog):
         *,
         reason: Annotated[Optional[str], ActionReason],
     ) -> None:
-        """Remove a role from a user."""
+        """Remove a role from a user.
+
+        Bot must have `Manage Roles` permission.
+        Also invoker must have `Manage Roles` permission.
+
+        Examples:
+        - `[p]remove role @user @role reason`
+            - This will remove @role from @user with the reason `reason`.
+
+        Notes:
+        - The reason is optional.
+        """
 
         if await self.remove_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.send(f"Successfully removed {role} from {user}.")
 
 
 async def setup(bot: Bot) -> None:
-    log.info("Loading Moderator cog...")
     await bot.add_cog(Mod(bot))

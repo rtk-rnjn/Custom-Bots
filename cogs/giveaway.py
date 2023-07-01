@@ -256,8 +256,11 @@ class Giveaway(Cog):
         return main_post
 
     @commands.command(name="gstart", aliases=["giveaway"])
+    @commands.has_permissions(manage_guild=True)
     async def gstart_command(self, ctx: Context) -> None:
         """Start a giveaway
+
+        The invoker must have `Manage Server` permissions to use this command.
 
         This command will walk you through the steps to start a giveaway."""
 
@@ -265,10 +268,16 @@ class Giveaway(Cog):
         await self.bot.create_timer(_event_name="giveaway", **post)
 
     @commands.command(name="gend", aliases=["giveawayend"])
+    @commands.has_permissions(manage_guild=True)
     async def gend_command(self, ctx: Context, *, message: int) -> None:
         """End a giveaway
 
-        This command will end a giveaway and select a winner."""
+        The invoker must have `Manage Server` permissions to use this command.
+        This command will end a giveaway and select a winner.
+        
+        Example:
+        `[p]gend 1234567890`
+        """
         if data := await self.bot.giveaways.find_one_and_update(
             {"message_id": message, "status": "ONGOING"}, {"$set": {"status": "END"}}
         ):
@@ -287,8 +296,12 @@ class Giveaway(Cog):
             await ctx.send("No giveaway found")
 
     @commands.command(name="glist", aliases=["giveawaylist"])
+    @commands.has_permissions(manage_guild=True)
     async def glist_command(self, ctx: Context) -> None:
-        """List all ongoing giveaways"""
+        """Show the latest ongoing giveaways.
+
+        The invoker must have `Manage Server` permissions to use this command.        
+        """
         if data := await self.bot.giveaways.find_one(
             {"status": "ONGOING", "guild_id": ctx.guild.id, "bot_id": self.bot.user.id}  # type: ignore
         ):
@@ -297,10 +310,16 @@ class Giveaway(Cog):
             await ctx.send("No giveaway found")
 
     @commands.command(name="gdelete", aliases=["giveawaydelete"])
+    @commands.has_permissions(manage_guild=True)
     async def gdelete_command(self, ctx: Context, *, message: int) -> None:
         """Delete a giveaway
 
-        This command will delete a giveaway."""
+        The invoker must have `Manage Server` permissions to use this command.
+        This command will delete a giveaway.
+        
+        Example:
+        `[p]gdelete 1234567890`
+        """
         if data := await self.bot.giveaways.find_one_and_delete({"message_id": message, "status": "ONGOING"}):
             await ctx.send("Giveaway deleted")
             await self.bot.delete_timer(_id=message)
@@ -308,6 +327,7 @@ class Giveaway(Cog):
             await ctx.send("No giveaway found")
 
     @commands.command(name="gdrop", aliases=["giveawaydrop"])
+    @commands.has_permissions(manage_guild=True)
     async def gdrop_command(
         self,
         ctx: Context,
@@ -318,7 +338,15 @@ class Giveaway(Cog):
     ) -> None:
         """Drop a giveaway
 
-        This command will drop a giveaway. A quick way to start a giveaway."""
+        The invoker must have `Manage Server` permissions to use this command.
+        This command will drop a giveaway. A quick way to start a giveaway.
+        
+        The duration can be specified as a number followed by a unit.
+        Valid units are `s`, `m`, `h`, `d`, `w`
+
+        Example:
+        `[p]gdrop 1h 1 Nitro`
+        """
         post = await self.make_giveaway_drop(ctx, duration=duration, winners=winners, prize=prize)
         await self.bot.create_timer(_event_name="giveaway", **post)
 
