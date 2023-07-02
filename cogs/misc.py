@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter
 from typing import Optional
 
 import discord
@@ -97,6 +98,70 @@ class Misc(Cog):
             .set_thumbnail(url=self.bot.user.display_avatar.url)
             .set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
         )
+
+    @commands.command()
+    async def cleanup(self, ctx: Context, search: int = 100):
+        """Cleans up the bot's messages from the channel.
+        If a search number is specified, it searches that many messages to delete.
+
+        If the bot has Manage Messages permissions then it will try to delete
+        messages that look like they invoked the bot as well.
+
+        After the cleanup is completed, the bot will send you a message with
+        which people got their messages deleted and their count. This is useful
+        to see which users are spammers.
+
+        Members with Manage Messages can search up to 1000 messages.
+        Members without can search up to 25 messages.
+        """
+        strategy = self._basic_cleanup_strategy
+        assert isinstance(ctx.author, discord.Member) and isinstance(ctx.me, discord.Member)
+        is_mod = ctx.channel.permissions_for(ctx.author).manage_messages
+        if ctx.channel.permissions_for(ctx.me).manage_messages:
+            if is_mod:
+                strategy = self._complex_cleanup_strategy
+            else:
+                strategy = self._regular_user_cleanup_strategy
+
+        search = min(max(2, search), 1000) if is_mod else min(max(2, search), 25)
+        spammers = await strategy(ctx, search)
+        deleted = sum(spammers.values())
+        messages = [f'{deleted} message{" was" if deleted == 1 else "s were"} removed.']
+        if deleted:
+            messages.append("")
+            spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
+            messages.extend(f"- **{author}**: {count}" for author, count in spammers)
+
+        await ctx.send("\n".join(messages), delete_after=10)
+
+    async def _basic_cleanup_strategy(self, ctx: Context, search: int):
+        count = 0
+        async for msg in ctx.history(limit=search, before=ctx.message):
+            if msg.author == ctx.me and not msg.mentions and not msg.role_mentions:
+                await msg.delete()
+                count += 1
+        return {"Bot": count}
+
+    async def _complex_cleanup_strategy(self, ctx: Context, search: int):
+        assert ctx.guild is not None and isinstance(ctx.channel, discord.TextChannel)
+        prefixes = tuple(self.bot.config.prefix)  # thanks startswith
+
+        def check(m: discord.Message):
+            return m.author == ctx.me or m.content.startswith(prefixes)
+
+        deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
+        return Counter(m.author.display_name for m in deleted)
+
+    async def _regular_user_cleanup_strategy(self, ctx: Context, search: int):
+        assert ctx.guild is not None and isinstance(ctx.channel, discord.TextChannel)
+
+        prefixes = tuple(self.bot.config.prefix)
+
+        def check(m: discord.Message):
+            return (m.author == ctx.me or m.content.startswith(prefixes)) and not m.mentions and not m.role_mentions
+
+        deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
+        return Counter(m.author.display_name for m in deleted)
 
 
 async def setup(bot: Bot) -> None:

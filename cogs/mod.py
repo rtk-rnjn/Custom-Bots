@@ -137,6 +137,8 @@ class Mod(Cog):
         before: int | None = None,
         after: int | None = None,
     ) -> bool:
+        await ctx.message.delete(delay=0.5)
+
         if limit > 1000:
             raise commands.BadArgument("Can only purge up to 1000 messages at a time.")
 
@@ -734,7 +736,7 @@ class Mod(Cog):
         user: MemberID,
         role: RoleID,
         *,
-        reason: Annotated[Optional[str], ActionReason],
+        reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
         """Add a role to a user.
 
@@ -774,7 +776,7 @@ class Mod(Cog):
         user: MemberID,
         role: RoleID,
         *,
-        reason: Annotated[Optional[str], ActionReason],
+        reason: Annotated[Optional[str], ActionReason] = None,
     ) -> None:
         """Remove a role from a user.
 

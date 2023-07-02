@@ -32,7 +32,6 @@ import os
 import re
 from collections import Counter
 from typing import Any
-from typing_extensions import override
 
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
@@ -61,6 +60,7 @@ logger.addHandler(handler)
 
 class Bot(commands.Bot):
     """Custom Bot implementation of commands.Bot"""
+
     mongo: Any
     uptime: datetime.datetime
 
@@ -411,7 +411,7 @@ class Bot(commands.Bot):
             return self.message_cache[message_id]
         except KeyError:
             pass
-        
+
         if msg := discord.utils.get(self.cached_messages, id=message_id):
             self.message_cache[message_id] = msg
             return msg

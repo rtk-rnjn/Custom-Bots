@@ -83,7 +83,12 @@ class Help(commands.HelpCommand):
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
         prefix = ctx.clean_prefix
-        embed = discord.Embed(title=f"`{prefix}{command.qualified_name}`", description=command.help or "No description")
+        cmd_help = command.help or "No description"
+        description = (
+            f"**`Usage      :`** `{prefix}{command.qualified_name} {command.signature}`\n\n"
+            f"**`Description:`**\n{cmd_help}"
+        )
+        embed = discord.Embed(title=f"`{prefix}{command.qualified_name}`", description=description)
         await ctx.send(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
