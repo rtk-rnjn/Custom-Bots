@@ -64,6 +64,6 @@ class Context(commands.Context[commands.Bot]):
 
     async def reply(self, *args, **kwargs):
         try:
-            await self.send(*args, **kwargs, reference=kwargs.pop("reference", self.message), mention_author=False)
+            return await self.send(*args, **kwargs, reference=kwargs.pop("reference", self.message), mention_author=False)
         except discord.HTTPException:
-            await self.send(*args, **kwargs, mention_author=True)
+            return await self.send(*args, **kwargs, mention_author=True)
