@@ -170,7 +170,7 @@ class Tickets(Cog):
     async def ticket(self, ctx: Context) -> None:
         """Ticket related commands"""
         if not ctx.invoked_subcommand:
-            await ctx.send_help(ctx.command)
+            await ctx.reply_help(ctx.command)
 
     @ticket.command(name="new", aliases=["create"])
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
@@ -312,7 +312,7 @@ class Tickets(Cog):
         convertor: Optional[commands.Converter] = None,
     ) -> str | discord.Object | None:
         try:
-            await ctx.send(embed=discord.Embed(description=msg))
+            await ctx.reply(embed=discord.Embed(description=msg))
             message = await self.bot.wait_for("message", timeout=60.0, check=check)  # type: discord.Message
         except asyncio.TimeoutError as e:
             raise commands.BadArgument("Ticket setup timed out.") from e
@@ -373,13 +373,13 @@ class Tickets(Cog):
                     check=check,
                 )
                 if maybe_create_new_message.lower() in {"yes", "y"}:
-                    message = await ctx.send(embed=discord.Embed(description="React to open a ticket."))
+                    message = await ctx.reply(embed=discord.Embed(description="React to open a ticket."))
                     self._ticket_cache["ticket_message"] = message.id
                     await message.add_reaction("\N{TICKET}")
                 else:
                     self._ticket_cache["ticket_message"] = None
 
-            await ctx.send(embed=discord.Embed(description="Ticket setup complete."))
+            await ctx.reply(embed=discord.Embed(description="Ticket setup complete."))
             await self._save_ticket_cache()
 
     @ticket_setup.command(name="pingrole", aliases=["ping"])

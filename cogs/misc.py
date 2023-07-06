@@ -71,9 +71,9 @@ class Misc(Cog):
             try:
                 await channel.send(embed=discord.Embed.from_dict(json.loads(str(data))))  # type: ignore
             except Exception as e:
-                await ctx.send(f"{ctx.author.mention} you didn't provide the proper json object. Error raised: {e}")
+                await ctx.reply(f"{ctx.author.mention} you didn't provide the proper json object. Error raised: {e}")
         else:
-            await ctx.send(
+            await ctx.reply(
                 f"{ctx.author.mention} you don't have Embed Links permission in {channel.mention}"  # type: ignore
             )
 
@@ -132,7 +132,7 @@ class Misc(Cog):
             spammers = sorted(spammers.items(), key=lambda t: t[1], reverse=True)
             messages.extend(f"- **{author}**: {count}" for author, count in spammers)
 
-        await ctx.send("\n".join(messages), delete_after=10)
+        await ctx.reply("\n".join(messages), delete_after=10)
 
     async def _basic_cleanup_strategy(self, ctx: Context, search: int):
         count = 0

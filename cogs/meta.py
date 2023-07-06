@@ -45,14 +45,14 @@ class Meta(Cog):
     @commands.command(name="ping")
     async def ping(self, ctx: Context) -> None:
         """Returns the bot's latency."""
-        await ctx.send(f"Pong! {round(self.bot.latency * 1000)}ms")
+        await ctx.reply(f"Pong! {round(self.bot.latency * 1000)}ms")
 
     @commands.command(name="uptime")
     async def uptime(self, ctx: Context) -> None:
         """Returns the bot's uptime."""
         relative_discord_time = discord.utils.format_dt(self.bot.uptime, style="R")
 
-        await ctx.send(f"Uptime: {relative_discord_time}")
+        await ctx.reply(f"Uptime: {relative_discord_time}")
 
     @commands.command(name="userinfo", aliases=["memberinfo", "ui", "mi"])
     @commands.bot_has_permissions(embed_links=True)

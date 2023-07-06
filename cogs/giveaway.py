@@ -71,7 +71,6 @@ class Giveaway(Cog):
             "Prize for the giveaway",
             "Number of winners?",
             "Required Role? (Role ID, Role Name, Role Mention) | `skip`, `none`, `no` for no role requirement",
-            # "Requied Level? `skip`, `none`, `no` for no role requirement",
             "Required Server? (ID Only, bot must be in that server) `skip`, `none`, `no` for no role requirement",
         ]
 
@@ -274,7 +273,7 @@ class Giveaway(Cog):
         )
 
         embed.set_footer(text=f"ID: {ctx.message.id}", icon_url=ctx.author.display_avatar.url)
-        msg: discord.Message = await ctx.send(embed=embed)
+        msg: discord.Message = await ctx.reply(embed=embed)
         await msg.add_reaction("\N{PARTY POPPER}")
         main_post = await self._create_giveaway_post(message=msg, **payload)  # flake8: noqa
 
@@ -309,17 +308,17 @@ class Giveaway(Cog):
         ):
             member_ids = await self.end_giveaway(self.bot, **data)
             if not member_ids:
-                await ctx.send(f"{ctx.author.mention} no winners! :(")
+                await ctx.reply(f"{ctx.author.mention} no winners! :(")
                 return
 
             joiner = ">, <@".join([str(i) for i in member_ids])
 
-            await ctx.send(
+            await ctx.reply(
                 f"Congrats <@{joiner}> you won **{data.get('prize')}**\n"
                 f"> https://discord.com/channels/{data.get('guild_id')}/{data.get('giveaway_channel')}/{data.get('message_id')}"
             )
         else:
-            await ctx.send("No giveaway found")
+            await ctx.reply("No giveaway found")
 
     @commands.command(name="glist", aliases=["giveawaylist"])
     @commands.has_permissions(manage_guild=True)
@@ -331,9 +330,9 @@ class Giveaway(Cog):
         if data := await self.bot.giveaways.find_one(
             {"status": "ONGOING", "guild_id": ctx.guild.id, "bot_id": self.bot.user.id}  # type: ignore
         ):
-            await ctx.send(f"Giveaway is ongoing at <#{data.get('giveaway_channel')}>")
+            await ctx.reply(f"Giveaway is ongoing at <#{data.get('giveaway_channel')}>")
         else:
-            await ctx.send("No giveaway found")
+            await ctx.reply("No giveaway found")
 
     @commands.command(name="gdelete", aliases=["giveawaydelete"])
     @commands.has_permissions(manage_guild=True)
@@ -347,10 +346,10 @@ class Giveaway(Cog):
         `[p]gdelete 1234567890`
         """
         if data := await self.bot.giveaways.find_one_and_delete({"message_id": message, "status": "ONGOING"}):
-            await ctx.send("Giveaway deleted")
+            await ctx.reply("Giveaway deleted")
             await self.bot.delete_timer(_id=message)
         else:
-            await ctx.send("No giveaway found")
+            await ctx.reply("No giveaway found")
 
     @commands.command(name="gdrop", aliases=["giveawaydrop"])
     @commands.has_permissions(manage_guild=True)

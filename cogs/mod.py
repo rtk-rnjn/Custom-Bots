@@ -288,9 +288,9 @@ class Mod(Cog):
         `[p]kick 1234567890` - kicks the user with the ID 1234567890 for no reason
         """
         if await self.kick_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
-            await ctx.send(f"Kicked **{user}** for reason: **{reason}**")
+            await ctx.reply(f"Kicked **{user}** for reason: **{reason}**")
         else:
-            await ctx.send(f"Failed kicking **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
+            await ctx.reply(f"Failed kicking **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
 
     @commands.command(name="ban")
     @commands.has_permissions(ban_members=True)
@@ -320,9 +320,9 @@ class Mod(Cog):
         `[p]ban 1234567890` - bans the user with the ID 1234567890 for no reason
         """
         if await self.ban_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
-            await ctx.send(f"Banned **{user}** for reason: **{reason}**")
+            await ctx.reply(f"Banned **{user}** for reason: **{reason}**")
         else:
-            await ctx.send(f"Failed banning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
+            await ctx.reply(f"Failed banning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
 
     @commands.command(name="unban")
     @commands.has_permissions(ban_members=True)
@@ -347,9 +347,9 @@ class Mod(Cog):
         `[p]unban 1234567890` - unbans the user with the ID 1234567890 for no reason
         """
         if await self.unban_method(user=user, guild=ctx.guild, reason=reason):  # type: ignore
-            await ctx.send(f"Unbanned **{user}** for reason: **{reason}**")
+            await ctx.reply(f"Unbanned **{user}** for reason: **{reason}**")
         else:
-            await ctx.send(f"Failed unbanning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
+            await ctx.reply(f"Failed unbanning **{user}**.\n{HELP_MESSAGE_KICK_BAN}")
 
     @commands.command(name="lock")
     @commands.has_permissions(manage_channels=True)
@@ -382,9 +382,9 @@ class Mod(Cog):
         """
         channel = channel or ctx.channel  # type: ignore
         if await self.lock_channel_method(channel=channel, reason=reason):  # type: ignore
-            await ctx.send(f"Locked **{channel}**.")
+            await ctx.reply(f"Locked **{channel}**.")
         else:
-            await ctx.send(f"Failed locking **{channel}**.")
+            await ctx.reply(f"Failed locking **{channel}**.")
 
     @commands.command(name="unlock")
     @commands.has_permissions(manage_channels=True)
@@ -417,9 +417,9 @@ class Mod(Cog):
         """
         channel = channel or ctx.channel  # type: ignore
         if await self.unlock_channel_method(channel=channel, reason=reason):  # type: ignore
-            await ctx.send(f"Unlocked **{channel}**.")
+            await ctx.reply(f"Unlocked **{channel}**.")
         else:
-            await ctx.send(f"Failed unlocking **{channel}**.")
+            await ctx.reply(f"Failed unlocking **{channel}**.")
 
     @commands.group(name="purge", invoke_without_command=True)
     @commands.has_permissions(manage_messages=True)
@@ -443,9 +443,9 @@ class Mod(Cog):
                 return True
 
             if await self.purge_method(ctx, limit or 100, check):
-                await ctx.send(f"Purged **{limit or 100}** messages.")
+                await ctx.reply(f"Purged **{limit or 100}** messages.")
             else:
-                await ctx.send("Failed purging messages. Try smaller amount.")
+                await ctx.reply("Failed purging messages. Try smaller amount.")
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
@@ -495,7 +495,7 @@ class Mod(Cog):
         The substring must be at least 3 characters long.
         """
         if len(substr) < 3:
-            await ctx.send("The substring length must be at least 3 characters.")
+            await ctx.reply("The substring length must be at least 3 characters.")
         else:
             await self.purge_method(ctx, 100, lambda e: substr in e.content)
 
@@ -529,7 +529,7 @@ class Mod(Cog):
         """Removes all reactions from messages that have them."""
 
         if search > 2000:
-            return await ctx.send(f"Too many messages to search for ({search}/2000)")
+            return await ctx.reply(f"Too many messages to search for ({search}/2000)")
 
         total_reactions = 0
         async for message in ctx.history(limit=search, before=ctx.message):
@@ -537,7 +537,7 @@ class Mod(Cog):
                 total_reactions += sum(r.count for r in message.reactions)
                 await message.clear_reactions()
 
-        await ctx.send(f"Successfully removed {total_reactions} reactions.")
+        await ctx.reply(f"Successfully removed {total_reactions} reactions.")
 
     @purge_command.command(name="all")
     @commands.has_permissions(manage_messages=True)
@@ -603,7 +603,7 @@ class Mod(Cog):
         try:
             args = parser.parse_args(shlex.split(arguments))
         except Exception as e:
-            await ctx.send(str(e))
+            await ctx.reply(str(e))
             return
 
         predicates = []
@@ -631,7 +631,7 @@ class Mod(Cog):
                     user = await converter.convert(ctx, u)
                     users.append(user)
                 except Exception as e:
-                    await ctx.send(str(e))
+                    await ctx.reply(str(e))
                     return
 
             predicates.append(lambda m: m.author in users)
@@ -687,7 +687,7 @@ class Mod(Cog):
         """
 
         if await self.timeout_method(user=user, duration=duration.dt, reason=reason, guild=ctx.guild):  # type: ignore
-            await ctx.send(
+            await ctx.reply(
                 f"Successfully timed out {user}. Timeout will remove **{discord.utils.format_dt(duration.dt, 'R')}**."
             )
 
@@ -712,7 +712,7 @@ class Mod(Cog):
         """
 
         if await self.unmute_method(user=user, reason=reason, guild=ctx.guild):  # type: ignore
-            await ctx.send(f"Successfully removed timeout from {user}.")
+            await ctx.reply(f"Successfully removed timeout from {user}.")
 
     @commands.group(name="add")
     @commands.has_permissions(manage_roles=True)
@@ -725,7 +725,7 @@ class Mod(Cog):
         """
 
         if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+            await ctx.reply_help(ctx.command)
 
     @add.command(name="role")
     @commands.has_permissions(manage_roles=True)
@@ -752,7 +752,7 @@ class Mod(Cog):
         """
 
         if await self.add_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
-            await ctx.send(f"Successfully added {role} to {user}.")
+            await ctx.reply(f"Successfully added {role} to {user}.")
 
     @commands.group(name="remove")
     @commands.has_permissions(manage_roles=True)
@@ -765,7 +765,7 @@ class Mod(Cog):
         """
 
         if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+            await ctx.reply_help(ctx.command)
 
     @remove.command(name="role")
     @commands.has_permissions(manage_roles=True)
@@ -792,7 +792,7 @@ class Mod(Cog):
         """
 
         if await self.remove_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
-            await ctx.send(f"Successfully removed {role} from {user}.")
+            await ctx.reply(f"Successfully removed {role} from {user}.")
 
 
 async def setup(bot: Bot) -> None:

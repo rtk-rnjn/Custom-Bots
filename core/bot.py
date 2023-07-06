@@ -230,7 +230,7 @@ class Bot(commands.Bot):
                 fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
             else:
                 fmt = " and ".join(missing)
-            return await ctx.send(f"Bot is missing permissions: `{fmt}`")
+            return await ctx.reply(f"Bot is missing permissions: `{fmt}`")
 
         if isinstance(error, commands.MissingPermissions):
             missing = [perm.replace("_", " ").replace("guild", "server").title() for perm in error.missing_permissions]
@@ -238,12 +238,12 @@ class Bot(commands.Bot):
                 fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
             else:
                 fmt = " and ".join(missing)
-            return await ctx.send(f"You need the following permission(s) to the run the command: `{fmt}`")
+            return await ctx.reply(f"You need the following permission(s) to the run the command: `{fmt}`")
 
         if isinstance(error, commands.CommandOnCooldown):
             now = discord.utils.utcnow() + datetime.timedelta(seconds=error.retry_after)
             discord_time = discord.utils.format_dt(now, "R")
-            return await ctx.send(f"This command is on cooldown. Try again in {discord_time}")
+            return await ctx.reply(f"This command is on cooldown. Try again in {discord_time}")
 
         if isinstance(
             error,
@@ -254,13 +254,13 @@ class Bot(commands.Bot):
             ),
         ):
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.send(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info.")
+            return await ctx.reply(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info.")
 
         if isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.send(f"Invalid argument: {error}")
+            return await ctx.reply(f"Invalid argument: {error}")
 
-        # return await ctx.send(f"Error: {error}")
+        # return await ctx.reply(f"Error: {error}")
 
     async def get_active_timer(self, **filters: Any) -> dict:
         """Get the active timer."""
@@ -424,9 +424,7 @@ class Bot(commands.Bot):
             ):
                 self.message_cache[msg.id] = msg
                 return msg
-        except discord.Forbidden:
-            return None
-        except discord.HTTPException:
+        except (discord.Forbidden, discord.HTTPException):
             return None
 
     async def on_error(self, event: str, *args, **kwargs) -> None:
@@ -435,6 +433,9 @@ class Bot(commands.Bot):
 
     async def __before_invoke(self, ctx: Context) -> None:
         """Check if the command is disabled in the guild."""
+        if not ctx.guild.chunked:
+            await ctx.guild.chunk(cache=True)
+
         guild_id = self.__config.guild_id
 
         if ctx.guild and guild_id and ctx.guild.id != guild_id and not await ctx.bot.is_owner(ctx.author):

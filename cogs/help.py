@@ -47,7 +47,7 @@ class Help(commands.HelpCommand):
         )
 
     async def on_help_command_error(self, ctx: Context, error: CommandError):
-        await ctx.send(f"Well this is awkward...```py\n{error}```")
+        await ctx.reply(f"Well this is awkward...```py\n{error}```")
 
     async def send_bot_help(self, mapping):
         ctx = self.context
@@ -65,7 +65,7 @@ class Help(commands.HelpCommand):
                 name=cog_name,
                 value=f"`{prefix}help {cog_name.lower()}`",
             )
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
 
     async def send_cog_help(self, cog: Cog):
         ctx = self.context
@@ -78,7 +78,7 @@ class Help(commands.HelpCommand):
                     value=command.short_doc or "No description",
                     inline=False,
                 )
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
 
     async def send_command_help(self, command: commands.Command):
         ctx = self.context
@@ -88,8 +88,8 @@ class Help(commands.HelpCommand):
             f"**`Usage      :`** `{prefix}{command.qualified_name} {command.signature}`\n\n"
             f"**`Description:`**\n{cmd_help}"
         )
-        embed = discord.Embed(title=f"`{prefix}{command.qualified_name}`", description=description)
-        await ctx.send(embed=embed)
+        embed = discord.Embed(title=f"Help for - `{prefix}{command.qualified_name}`", description=description)
+        await ctx.reply(embed=embed)
 
     async def send_group_help(self, group: commands.Group):
         ctx = self.context
@@ -102,8 +102,8 @@ class Help(commands.HelpCommand):
                     value=command.short_doc or "No description",
                     inline=False,
                 )
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
 
     async def send_error_message(self, error):
         ctx = self.context
-        await ctx.send(f"Well this is awkward...```py\n{error}```")
+        await ctx.reply(f"Well this is awkward...```py\n{error}```")

@@ -45,7 +45,7 @@ class Owner(Cog):
         if await self.bot.is_owner(ctx.author):
             return True
 
-        await ctx.send("You are not the owner of this bot.")
+        await ctx.reply("You are not the owner of this bot.")
         return False
 
     @commands.command(aliases=["streaming", "listening", "watching"])

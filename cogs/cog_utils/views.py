@@ -86,7 +86,7 @@ class BotColor:
             with suppress(ValueError):
                 color = ImageColor.getrgb(arg)
                 result = discord.Color.from_rgb(*color)
-        return result or await ctx.send(f"`{arg}` isn't a valid color.")
+        return result or await ctx.reply(f"`{arg}` isn't a valid color.")
 
 
 class Content(discord.ui.Modal, title="Edit Message Content"):
@@ -349,7 +349,7 @@ class EmbedBuilder(BotView):
             self.message = await self.message.edit(content=self.content, embed=self.embed, view=self)
 
     async def rendor(self, **kwargs: T.Any):
-        self.message: discord.Message = await self.ctx.send(
+        self.message: discord.Message = await self.ctx.reply(
             kwargs.get("content", "\u200b"),
             embed=kwargs.get("embed", self.help_embed),
             view=self,
