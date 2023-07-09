@@ -375,6 +375,32 @@ class Giveaway(Cog):
         post = await self.make_giveaway_drop(ctx, duration=duration, winners=winners, prize=prize)
         await self.bot.create_timer(_event_name="giveaway", **post)
 
+    async def add_reactor(self, bot: Bot, payload: discord.RawReactionActionEvent):
+        if str(payload.emoji) != "\N{PARTY POPPER}":
+            return
+
+        await bot.giveaways.update_one(
+            {"message_id": payload.message_id, "status": "ONGOING"},
+            {"$addToSet": {"reactors": payload.user_id}},
+        )
+
+    async def remove_reactor(self, bot: Bot, payload: discord.RawReactionActionEvent):
+        if str(payload.emoji) != "\N{PARTY POPPER}":
+            return
+
+        await bot.giveaways.update_one(
+            {"message_id": payload.message_id, "status": "ONGOING"},
+            {"$pull": {"reactors": payload.user_id}},
+        )
+
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.add_reactor(self.bot, payload)
+
+    @Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.remove_reactor(self.bot, payload)
+
 
 async def setup(bot: Bot) -> None:
     await bot.add_cog(Giveaway(bot))

@@ -62,6 +62,7 @@ class Config:
         self._activity: str   = kwargs.pop("activity")  # type: ignore
         self._media: str      = kwargs.pop("media")     # type: ignore
         self._guild_id: int   = kwargs.pop("guild_id")  # type: ignore
+        self._suggestion_channel: int = kwargs.pop("suggestion_channel")  # type: ignore
         # fmt: on
 
         """
@@ -130,8 +131,15 @@ class Config:
     def guild_id(self) -> int:
         return self._guild_id
 
+    @property
+    def suggestion_channel(self) -> int:
+        return self._suggestion_channel
+
     def set_prefix(self, prefix: str) -> None:
         self._prefix = prefix
+    
+    def set_suggestion_channel(self, channel_id: int) -> None:
+        self._suggestion_channel = channel_id
 
 
 class Null:
