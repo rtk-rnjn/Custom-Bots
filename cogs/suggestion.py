@@ -10,7 +10,6 @@ from core import Bot, Cog, Context
 
 REACTION_EMOJI = ["\N{UPWARDS BLACK ARROW}", "\N{DOWNWARDS BLACK ARROW}"]
 
-
 OTHER_REACTION = {
     "INVALID": {"emoji": "\N{WARNING SIGN}", "color": 0xFFFFE0},
     "ABUSE": {"emoji": "\N{DOUBLE EXCLAMATION MARK}", "color": 0xFFA500},
@@ -390,3 +389,6 @@ class Suggestion(Cog):
             return member._roles.has(role_id)
         except KeyError:
             return False
+
+async def setup(bot: Bot) -> None:
+    await bot.add_cog(Suggestion(bot))
