@@ -1,12 +1,12 @@
 from __future__ import annotations
+
 import io
-from itertools import zip_longest
-from typing import Any, Dict, Optional, Union
+from typing import Dict, Optional, Union
 
 import discord
+from discord.ext import commands
 
 from core import Bot, Cog, Context
-from discord.ext import commands
 
 REACTION_EMOJI = ["\N{UPWARDS BLACK ARROW}", "\N{DOWNWARDS BLACK ARROW}"]
 
@@ -19,6 +19,7 @@ OTHER_REACTION = {
     "APPROVED": {"emoji": "\N{WHITE HEAVY CHECK MARK}", "color": 0x90EE90},
     "DUPLICATE": {"emoji": "\N{HEAVY EXCLAMATION MARK SYMBOL}", "color": 0xDDD6D5},
 }
+
 
 class Suggestion(Cog):
     def __init__(self, bot: Bot) -> None:
@@ -335,7 +336,6 @@ class Suggestion(Cog):
 
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-
         if payload.message_id not in self.message:
             return
 
@@ -349,7 +349,6 @@ class Suggestion(Cog):
 
     @Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
-
         if payload.message_id not in self.message:
             return
 

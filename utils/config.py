@@ -137,7 +137,7 @@ class Config:
 
     def set_prefix(self, prefix: str) -> None:
         self._prefix = prefix
-    
+
     def set_suggestion_channel(self, channel_id: int) -> None:
         self._suggestion_channel = channel_id
 
