@@ -1,4 +1,5 @@
 from __future__ import annotations
+import random
 
 import re
 from typing import Union
@@ -7,6 +8,23 @@ import discord
 from discord.ext import commands, tasks
 
 from core import Bot, Cog, Context
+
+RANDOM_GREETINGS = [
+    "hi",
+    "hello",
+    "hey",
+    "howdy",
+    "hola",
+    "greetings",
+    "sup",
+    "yo",
+    "wassup",
+    "what's up",
+    "what's good",
+    "what's happening",
+    "what's new",
+    "what's popping",
+]
 
 
 class Autoresponder(Cog):
@@ -21,6 +39,46 @@ class Autoresponder(Cog):
         self.__need_save = False
 
         self.cooldown = commands.CooldownMapping.from_cooldown(1, 5, commands.BucketType.user)
+
+    def formatter(self, response: str, message: discord.Message) -> str:
+        # sourcery skip: inline-immediately-returned-variable
+        """Format the message content with the message object."""
+        assert isinstance(message.guild, discord.Guild) and isinstance(message.channel, discord.abc.GuildChannel)
+
+        response = (
+            response.replace("{author}", str(message.author))
+            .replace("{author_mention}", message.author.mention)
+            .replace("{author_name}", message.author.name)
+            .replace("{author_display_name}", message.author.display_name)
+            .replace("{author_id}", str(message.author.id))
+
+            # channel
+            .replace("{channel}", str(message.channel))
+            .replace("{channel_mention}", message.channel.mention)
+            .replace("{channel_name}", message.channel.name)
+            .replace("{channel_id}", str(message.channel.id))
+            
+            # guild
+            .replace("{guild}", str(message.guild))
+            .replace("{guild_name}", message.guild.name)
+            .replace("{guild_id}", str(message.guild.id))
+
+            # message
+            .replace("{message}", message.content)
+            .replace("{message_id}", str(message.id))
+
+            # bot
+            .replace("{bot}", str(self.bot.user))
+            .replace("{bot_mention}", self.bot.user.mention)
+            .replace("{bot_name}", self.bot.user.name)
+            .replace("{bot_id}", str(self.bot.user.id))
+
+            # functions
+            .replace("{!random_greeting}", random.choice(RANDOM_GREETINGS))
+            .replace("{!random_int}", str(random.randint(0, 100)))
+        )
+
+        return response
 
     async def cog_load(self) -> None:
         query = {
@@ -58,6 +116,31 @@ class Autoresponder(Cog):
 
         Examples:
         - `[p]ar add hello Hello World!`
+        - `[p]ar add ^hello$ Hello World!`
+
+        - `[p]ar add hi {author_mention} {!random_greeting} welcome to {guild_name}!`
+
+        Bot variables:
+        - `{author}        ` - The author's full name.
+        - `{author_mention}` - The author's mention.
+        - `{author_name}   ` - The author's name.
+        - `{author_display_name}` - The author's display name.
+        - `{author_id}     ` - The author's ID.
+        - `{channel}       ` - The channel's full name.
+        - `{channel_mention}` - The channel's mention.
+        - `{channel_name}  ` - The channel's name.
+        - `{channel_id}    ` - The channel's ID.
+        - `{guild}         ` - The guild's full name.
+        - `{guild_name}    ` - The guild's name.
+        - `{guild_id}      ` - The guild's ID.
+        - `{message}       ` - The message's content.
+        - `{message_id}    ` - The message's ID.
+        - `{bot}           ` - The bot's full name.
+        - `{bot_mention}   ` - The bot's mention.
+        - `{bot_name}      ` - The bot's name.
+        - `{bot_id}        ` - The bot's ID.
+        - `{!random_greeting}` - A random greeting.
+        - `{!random_int}   ` - A random integer between 0 and 100.
         """
         if trigger in self._ar_message_cache:
             await ctx.reply(
@@ -141,14 +224,14 @@ class Autoresponder(Cog):
         for trigger, response in self._ar_message_cache.items():
             trigger = re.escape(trigger.strip())
             try:
-                if re.fullmatch(fr"{trigger}", message.content, re.IGNORECASE):
-                    await message.channel.send(response)
+                if re.fullmatch(rf"{trigger}", message.content, re.IGNORECASE):
+                    await message.channel.send(self.formatter(response, message))
                     return
             except re.error:
                 pass
             else:
                 if message.content.lower() == trigger.lower():
-                    await message.channel.send(response)
+                    await message.channel.send(self.formatter(response, message))
                     return
 
     @tasks.loop(minutes=5)
@@ -267,7 +350,7 @@ class Autoresponder(Cog):
             trigger = re.escape(trigger.strip())
 
             try:
-                if re.fullmatch(fr"{trigger}", message.content, re.IGNORECASE):
+                if re.fullmatch(rf"{trigger}", message.content, re.IGNORECASE):
                     await self.add_reaction(message, response)
                     return
             except re.error:
