@@ -14,13 +14,13 @@ class Autoresponder(Cog):
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-        self._message_cache: dict[str, str] = {}
-        self._reaction_cache: dict[str, str] = {}
+        self._ar_message_cache: dict[str, str] = {}
+        self._ar_reaction_cache: dict[str, str] = {}
         self.save_loop.start()
 
         self.__need_save = False
 
-        self.cooldown = commands.CooldownMapping.from_cooldown(1, 5, commands.BucketType.channel)
+        self.cooldown = commands.CooldownMapping.from_cooldown(1, 5, commands.BucketType.user)
 
     async def cog_load(self) -> None:
         query = {
@@ -31,7 +31,7 @@ class Autoresponder(Cog):
         if data is None:
             return
 
-        self._message_cache = data["ar_msg"]
+        self._ar_message_cache = data["ar_msg"]
 
     async def cog_unload(self) -> None:
         await self.save()
@@ -40,7 +40,7 @@ class Autoresponder(Cog):
 
     async def save(self) -> None:
         query = {"id": self.bot.config.id}
-        update = {"$set": {"ar_msg": self._message_cache}}
+        update = {"$set": {"ar_msg": self._ar_message_cache}}
         await self.bot.main_config.update_one(query, update, upsert=True)
 
     @commands.group(name="autoresponder", aliases=["ar"], invoke_without_command=True)
@@ -59,13 +59,13 @@ class Autoresponder(Cog):
         Examples:
         - `[p]ar add hello Hello World!`
         """
-        if trigger in self._message_cache:
+        if trigger in self._ar_message_cache:
             await ctx.reply(
                 f"There is already an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
             )
             return
 
-        self._message_cache[trigger] = str(response)
+        self._ar_message_cache[trigger] = str(response)
         await ctx.reply(f"Added a new autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none())
 
         self.__need_save = True
@@ -78,7 +78,7 @@ class Autoresponder(Cog):
         - `[p]ar remove hello`
         """
         try:
-            del self._message_cache[trigger]
+            del self._ar_message_cache[trigger]
         except KeyError:
             await ctx.reply(
                 f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
@@ -92,19 +92,19 @@ class Autoresponder(Cog):
     @autoresponder.command(name="list")
     async def autoresponder_list(self, ctx: Context) -> None:
         """List all autoresponders."""
-        if not self._message_cache:
+        if not self._ar_message_cache:
             await ctx.reply("There are no autoresponders.", allowed_mentions=discord.AllowedMentions.none())
             return
 
         embed = discord.Embed(title="Autoresponders")
-        embed.description = "`" + "`, `".join(self._message_cache.keys()) + "`"
+        embed.description = "`" + "`, `".join(self._ar_message_cache.keys()) + "`"
 
         await ctx.reply(embed=embed)
 
     @autoresponder.command(name="clear")
     async def autoresponder_clear(self, ctx: Context) -> None:
         """Clear all autoresponders."""
-        self._message_cache.clear()
+        self._ar_message_cache.clear()
         await ctx.reply("Cleared all autoresponders.", allowed_mentions=discord.AllowedMentions.none())
 
         self.__need_save = True
@@ -113,7 +113,7 @@ class Autoresponder(Cog):
     async def autoresponder_show(self, ctx: Context, trigger: str) -> None:
         """Show the response for an autoresponder."""
         try:
-            response = self._message_cache[trigger]
+            response = self._ar_message_cache[trigger]
         except KeyError:
             await ctx.reply(
                 f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
@@ -127,6 +127,9 @@ class Autoresponder(Cog):
 
     @Cog.listener("on_message")
     async def on_ar_message(self, message: discord.Message) -> None:
+        if not self._ar_message_cache:
+            return
+
         if message.author.bot or not message.guild or not message.content:
             return
 
@@ -135,15 +138,17 @@ class Autoresponder(Cog):
         if retry_after:
             return
 
-        for trigger, response in self._message_cache.items():
+        for trigger, response in self._ar_message_cache.items():
+            trigger = re.escape(trigger.strip())
+
             try:
-                if re.search(trigger, message.content, re.IGNORECASE):
+                if re.search(fr"{trigger}", message.content, re.IGNORECASE):
                     await message.channel.send(response)
             except re.error:
                 pass
-
-            if message.content.lower() == trigger.lower():
-                await message.channel.send(response)
+            else:
+                if message.content.lower() == trigger.lower():
+                    await message.channel.send(response)
 
     @tasks.loop(minutes=5)
     async def save_loop(self) -> None:
@@ -167,14 +172,14 @@ class Autoresponder(Cog):
         Examples:
         - `[p]ar reaction add hello :wave:`
         """
-        if trigger in self._reaction_cache:
+        if trigger in self._ar_reaction_cache:
             await ctx.reply(
                 f"There is already an autoresponder reaction for `{trigger}`.",
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
-        self._reaction_cache[trigger] = str(reaction)
+        self._ar_reaction_cache[trigger] = str(reaction)
         await ctx.reply(
             f"Added a new autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
         )
@@ -189,7 +194,7 @@ class Autoresponder(Cog):
         - `[p]ar reaction remove hello`
         """
         try:
-            del self._reaction_cache[trigger]
+            del self._ar_reaction_cache[trigger]
         except KeyError:
             await ctx.reply(
                 f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
@@ -205,19 +210,19 @@ class Autoresponder(Cog):
     @autoresponder_reaction.command(name="list")
     async def autoresponder_reaction_list(self, ctx: Context) -> None:
         """List all autoresponder reactions."""
-        if not self._reaction_cache:
+        if not self._ar_reaction_cache:
             await ctx.reply("There are no autoresponder reactions.", allowed_mentions=discord.AllowedMentions.none())
             return
 
         embed = discord.Embed(title="Autoresponder Reactions")
-        embed.description = "`" + "`, `".join(self._reaction_cache.keys()) + "`"
+        embed.description = "`" + "`, `".join(self._ar_reaction_cache.keys()) + "`"
 
         await ctx.reply(embed=embed)
 
     @autoresponder_reaction.command(name="clear")
     async def autoresponder_reaction_clear(self, ctx: Context) -> None:
         """Clear all autoresponder reactions."""
-        self._reaction_cache.clear()
+        self._ar_reaction_cache.clear()
         await ctx.reply("Cleared all autoresponder reactions.", allowed_mentions=discord.AllowedMentions.none())
 
         self.__need_save = True
@@ -226,7 +231,7 @@ class Autoresponder(Cog):
     async def autoresponder_reaction_show(self, ctx: Context, trigger: str) -> None:
         """Show the response for an autoresponder reaction."""
         try:
-            response = self._reaction_cache[trigger]
+            response = self._ar_reaction_cache[trigger]
         except KeyError:
             await ctx.reply(
                 f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
@@ -246,6 +251,9 @@ class Autoresponder(Cog):
 
     @Cog.listener("on_message")
     async def on_ar_reaction(self, message: discord.Message) -> None:
+        if not self._ar_reaction_cache:
+            return
+
         if message.author.bot or not message.guild:
             return
 
@@ -254,15 +262,17 @@ class Autoresponder(Cog):
         if retry_after:
             return
 
-        for trigger, response in self._reaction_cache.items():
+        for trigger, response in self._ar_reaction_cache.items():
+            trigger = re.escape(trigger.strip())
+
             try:
-                if re.search(trigger, message.content, re.IGNORECASE):
+                if re.search(fr"{trigger}", message.content, re.IGNORECASE):
                     await self.add_reaction(message, response)
             except re.error:
                 pass
-
-            if message.content.lower() == trigger.lower():
-                await self.add_reaction(message, response)
+            else:
+                if message.content.lower() == trigger.lower():
+                    await self.add_reaction(message, response)
 
 
 async def setup(bot: Bot) -> None:
