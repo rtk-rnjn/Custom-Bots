@@ -725,7 +725,7 @@ class Mod(Cog):
         """
 
         if ctx.invoked_subcommand is None:
-            await ctx.reply_help(ctx.command)
+            await ctx.send_help(ctx.command)
 
     @add.command(name="role")
     @commands.has_permissions(manage_roles=True)
@@ -765,7 +765,7 @@ class Mod(Cog):
         """
 
         if ctx.invoked_subcommand is None:
-            await ctx.reply_help(ctx.command)
+            await ctx.send_help(ctx.command)
 
     @remove.command(name="role")
     @commands.has_permissions(manage_roles=True)

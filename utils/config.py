@@ -50,7 +50,10 @@ __all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV", "MONGO_CLIENT", 
 
 
 class Config:
-    def __init__(self, **kwargs: str | int | bool | list[str]) -> None:
+    def __init__(
+        self,
+        **kwargs: str | int | bool | list[str],
+    ) -> None:
         # fmt: off
         self._id: int         = kwargs.pop("id")        # type: ignore
         self._name: str       = kwargs.pop("name")      # type: ignore
@@ -65,6 +68,7 @@ class Config:
         self._suggestion_channel: int | None = kwargs.pop("suggestion_channel", None)  # type: ignore
         # fmt: on
 
+        self.__kw = kwargs
         """
         {
             "id": INT,
@@ -79,6 +83,7 @@ class Config:
             "cogs": [
                 STR
             ]
+            ...
         }
         """
 
@@ -155,6 +160,7 @@ class Config:
             The new prefix
         """
         self._prefix = prefix
+        self.__kw["prefix"] = prefix
 
     def set_suggestion_channel(self, channel_id: int) -> None:
         """Set Bot Suggestion Channel ID
@@ -165,6 +171,38 @@ class Config:
             The new channel ID
         """
         self._suggestion_channel = channel_id
+        self.__kw["suggestion_channel"] = channel_id
+
+    def __getattr__(self, __name: str) -> Any:
+        return self.__kw.get(__name, None)
+
+    def __getitem__(self, __name: str) -> Any:
+        return self.__kw.get(__name, None)
+
+    def __setitem__(self, __name: str, __value: Any) -> None:
+        self.__kw[__name] = __value
+
+    def __delitem__(self, __name: str) -> None:
+        del self.__kw[__name]
+
+    async def update_to_db(self) -> None:
+        """Update the bot config to the database"""
+        from .converters import ToAsync
+
+        @ToAsync()
+        def __internal_update() -> None:
+            collection = MONGO_CLIENT["customBots"]["mainConfigCollection"]
+
+            query = {
+                "id": self.id,
+            }
+            update = {
+                "$set": dict(self.__kw.items()),
+            }
+
+            collection.update_one(query, update, upsert=True)
+
+        await __internal_update()
 
 
 class Null:
@@ -234,7 +272,7 @@ if not ENV.MONGO_URI:
 MONGO_CLIENT = MongoClient(str(ENV.MONGO_URI))
 
 
-def load_config(bot_id: int | None = None) -> Config | list[Config] | None:
+def load_config(bot_id: int | None = None) -> list[Config]:
     collection = MONGO_CLIENT["customBots"]["mainConfigCollection"]
 
     if not bot_id:
@@ -245,9 +283,7 @@ def load_config(bot_id: int | None = None) -> Config | list[Config] | None:
         return ls
 
     data = collection.find_one({"id": bot_id}, {"_id": 0})
-    return Config(**data) if data else None
+    return [Config(**data)] if data else []
 
 
 BOT_CONFIGS = load_config()
-if not isinstance(BOT_CONFIGS, list):
-    BOT_CONFIGS = [BOT_CONFIGS]

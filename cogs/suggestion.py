@@ -165,6 +165,16 @@ class Suggestion(Cog):
             await self.__notify_on_suggestion(ctx, message=msg)
             await ctx.message.delete(delay=0)
 
+    @suggest.command(name="set")
+    @commands.cooldown(1, 60, commands.BucketType.member)
+    @commands.has_permissions(manage_guid=True)
+    async def suggest_set_channel(self, ctx: Context, *, channel: discord.TextChannel):
+        """Set the suggestion channel"""
+
+        self.bot.config.set_suggestion_channel(channel.id)
+        await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
+        await self.bot.config.update_to_db()
+
     @suggest.command(name="delete")
     @commands.cooldown(1, 60, commands.BucketType.member)
     @commands.bot_has_permissions(read_message_history=True)

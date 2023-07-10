@@ -170,7 +170,7 @@ class Tickets(Cog):
     async def ticket(self, ctx: Context) -> None:
         """Ticket related commands"""
         if not ctx.invoked_subcommand:
-            await ctx.reply_help(ctx.command)
+            await ctx.send_help(ctx.command)
 
     @ticket.command(name="new", aliases=["create"])
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)

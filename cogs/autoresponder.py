@@ -20,6 +20,8 @@ class Autoresponder(Cog):
 
         self.__need_save = False
 
+        self.cooldown = commands.CooldownMapping.from_cooldown(1, 5, commands.BucketType.channel)
+
     async def cog_load(self) -> None:
         query = {
             "id": self.bot.config.id,
@@ -46,7 +48,7 @@ class Autoresponder(Cog):
     async def autoresponder(self, ctx: Context) -> None:
         """The base command for the autoresponder."""
         if not ctx.invoked_subcommand:
-            await ctx.reply_help(ctx.command)
+            await ctx.send_help(ctx.command)
 
     @autoresponder.command(name="add", aliases=["create"])
     async def autoresponder_add(self, ctx: Context, trigger: str, *, response: commands.clean_content) -> None:
@@ -125,7 +127,12 @@ class Autoresponder(Cog):
 
     @Cog.listener("on_message")
     async def on_ar_message(self, message: discord.Message) -> None:
-        if message.author.bot:
+        if message.author.bot or not message.guild or not message.content:
+            return
+        
+        bucket = self.cooldown.get_bucket(message)
+        retry_after = bucket.update_rate_limit() if bucket else 0
+        if retry_after:
             return
 
         for trigger, response in self._message_cache.items():
@@ -149,7 +156,7 @@ class Autoresponder(Cog):
     async def autoresponder_reaction(self, ctx: Context) -> None:
         """The base command for the autoresponder reaction."""
         if not ctx.invoked_subcommand:
-            await ctx.reply_help(ctx.command)
+            await ctx.send_help(ctx.command)
 
     @autoresponder_reaction.command(name="add", aliases=["create"])
     async def autoresponder_reaction_add(self, ctx: Context, trigger: str, *, reaction: Union[str, discord.Emoji]) -> None:
@@ -239,7 +246,12 @@ class Autoresponder(Cog):
 
     @Cog.listener("on_message")
     async def on_ar_reaction(self, message: discord.Message) -> None:
-        if message.author.bot:
+        if message.author.bot or not message.guild:
+            return
+        
+        bucket = self.cooldown.get_bucket(message)
+        retry_after = bucket.update_rate_limit() if bucket else 0
+        if retry_after:
             return
 
         for trigger, response in self._reaction_cache.items():
