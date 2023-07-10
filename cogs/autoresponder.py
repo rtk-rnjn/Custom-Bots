@@ -109,6 +109,7 @@ class Autoresponder(Cog):
             await ctx.send_help(ctx.command)
 
     @autoresponder.command(name="add", aliases=["create"])
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_add(self, ctx: Context, trigger: str, *, response: commands.clean_content) -> None:
         """Add a new autoresponder
 
@@ -154,6 +155,7 @@ class Autoresponder(Cog):
         self.__need_save = True
 
     @autoresponder.command(name="remove", aliases=["delete"])
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_remove(self, ctx: Context, trigger: str) -> None:
         """Remove an autoresponder
 
@@ -173,6 +175,7 @@ class Autoresponder(Cog):
         self.__need_save = True
 
     @autoresponder.command(name="list")
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_list(self, ctx: Context) -> None:
         """List all autoresponders."""
         if not self._ar_message_cache:
@@ -185,6 +188,7 @@ class Autoresponder(Cog):
         await ctx.reply(embed=embed)
 
     @autoresponder.command(name="clear")
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_clear(self, ctx: Context) -> None:
         """Clear all autoresponders."""
         self._ar_message_cache.clear()
@@ -193,6 +197,7 @@ class Autoresponder(Cog):
         self.__need_save = True
 
     @autoresponder.command(name="show")
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_show(self, ctx: Context, trigger: str) -> None:
         """Show the response for an autoresponder."""
         try:
@@ -248,6 +253,7 @@ class Autoresponder(Cog):
             await ctx.send_help(ctx.command)
 
     @autoresponder_reaction.command(name="add", aliases=["create"])
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_add(self, ctx: Context, trigger: str, *, reaction: Union[str, discord.Emoji]) -> None:
         """Add a new autoresponder reaction
 
@@ -271,6 +277,7 @@ class Autoresponder(Cog):
         self.__need_save = True
 
     @autoresponder_reaction.command(name="remove", aliases=["delete"])
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_remove(self, ctx: Context, trigger: str) -> None:
         """Remove an autoresponder reaction
 
@@ -292,6 +299,7 @@ class Autoresponder(Cog):
         self.__need_save = True
 
     @autoresponder_reaction.command(name="list")
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_list(self, ctx: Context) -> None:
         """List all autoresponder reactions."""
         if not self._ar_reaction_cache:
@@ -304,6 +312,7 @@ class Autoresponder(Cog):
         await ctx.reply(embed=embed)
 
     @autoresponder_reaction.command(name="clear")
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_clear(self, ctx: Context) -> None:
         """Clear all autoresponder reactions."""
         self._ar_reaction_cache.clear()
@@ -312,6 +321,7 @@ class Autoresponder(Cog):
         self.__need_save = True
 
     @autoresponder_reaction.command(name="show")
+    @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_show(self, ctx: Context, trigger: str) -> None:
         """Show the response for an autoresponder reaction."""
         try:
