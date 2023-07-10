@@ -259,7 +259,7 @@ class Bot(commands.Bot):
             ),
         ):
             ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.reply(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.invoked_with}` for more info.")
+            return await ctx.reply(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.command.qualified_name}` for more info.")  # type: ignore
 
         if isinstance(error, commands.BadArgument):
             ctx.command.reset_cooldown(ctx)  # type: ignore

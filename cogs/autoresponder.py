@@ -140,15 +140,16 @@ class Autoresponder(Cog):
 
         for trigger, response in self._ar_message_cache.items():
             trigger = re.escape(trigger.strip())
-
             try:
-                if re.search(fr"{trigger}", message.content, re.IGNORECASE):
+                if re.fullmatch(fr"{trigger}", message.content, re.IGNORECASE):
                     await message.channel.send(response)
+                    return
             except re.error:
                 pass
             else:
                 if message.content.lower() == trigger.lower():
                     await message.channel.send(response)
+                    return
 
     @tasks.loop(minutes=5)
     async def save_loop(self) -> None:
@@ -266,13 +267,15 @@ class Autoresponder(Cog):
             trigger = re.escape(trigger.strip())
 
             try:
-                if re.search(fr"{trigger}", message.content, re.IGNORECASE):
+                if re.fullmatch(fr"{trigger}", message.content, re.IGNORECASE):
                     await self.add_reaction(message, response)
+                    return
             except re.error:
                 pass
             else:
                 if message.content.lower() == trigger.lower():
                     await self.add_reaction(message, response)
+                    return
 
 
 async def setup(bot: Bot) -> None:
