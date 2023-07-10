@@ -412,7 +412,7 @@ class Suggestion(Cog):
             if any([perms.manage_guild, perms.manage_messages]):
                 return True
 
-            if role := discord.utils.get(member.roles, name="Moderator"):
+            if discord.utils.get(member.roles, name="Moderator"):
                 return True
 
         except KeyError:
