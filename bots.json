@@ -8,6 +8,8 @@
         "cogs.giveaway",
         "cogs.custom_events",
         "cogs.ticket",
-        "cogs.events"
+        "cogs.events",
+        "cogs.suggestion",
+        "cogs.autoresponder"
     ]
 }

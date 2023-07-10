@@ -63,6 +63,7 @@ class Bot(commands.Bot):
 
     mongo: Any
     uptime: datetime.datetime
+    user: discord.ClientUser
 
     def __init__(self, config: Config):
         super().__init__(
@@ -107,6 +108,8 @@ class Bot(commands.Bot):
         self.timers = self.main_db["timerCollections"]  # pylint: disable=attribute-defined-outside-init
         self.giveaways = self.main_db["giveawayCollections"]  # pylint: disable=attribute-defined-outside-init
         self.ticket = self.main_db["ticketCollections"]  # pylint: disable=attribute-defined-outside-init
+        self.main_config_configuration = self.main_db["mainConfigCollection"]  # pylint: disable=attribute-defined-outside-init
+        self.main_config = self.main_config_configuration
 
     async def setup_hook(self) -> None:
         await self.load_extension("jishaku")

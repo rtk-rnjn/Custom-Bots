@@ -62,7 +62,7 @@ class Config:
         self._activity: str   = kwargs.pop("activity")  # type: ignore
         self._media: str      = kwargs.pop("media")     # type: ignore
         self._guild_id: int   = kwargs.pop("guild_id")  # type: ignore
-        self._suggestion_channel: int = kwargs.pop("suggestion_channel")  # type: ignore
+        self._suggestion_channel: int | None = kwargs.pop("suggestion_channel", None)  # type: ignore
         # fmt: on
 
         """
@@ -93,52 +93,77 @@ class Config:
 
     @property
     def id(self) -> int:
+        """Bot ID"""
         return self._id
 
     @property
     def name(self) -> str:
+        """Bot Name"""
         return self._name
 
     @property
     def token(self) -> str:
+        """Bot Token"""
         return self._token
 
     @property
     def owner_id(self) -> int:
+        """Bot Owner ID"""
         return self._owner_id
 
     @property
     def owner_ids(self) -> set[int]:
+        """Bot Owner IDs"""
         return {self.owner_id, master_owner}
 
     @property
     def cogs(self) -> list[str]:
+        """Bot Cogs"""
         return self._cogs
 
     @property
     def prefix(self) -> str:
+        """Bot Prefix"""
         return self._prefix
 
     @property
     def status(self) -> discord.Status:
+        """Bot Status"""
         return getattr(discord.Status, self._status)
 
     @property
     def activity(self) -> discord.Activity:
+        """Bot Activity"""
         return discord.Activity(type=getattr(discord.ActivityType, self._activity), name=self._media)
 
     @property
     def guild_id(self) -> int:
+        """Bot Guild ID"""
         return self._guild_id
 
     @property
     def suggestion_channel(self) -> int:
-        return self._suggestion_channel
+        """Bot Suggestion Channel ID"""
+        return self._suggestion_channel or 0
 
     def set_prefix(self, prefix: str) -> None:
+        """Set Bot Prefix
+
+        Parameters
+        ----------
+        prefix: str
+            The new prefix
+        """
         self._prefix = prefix
 
     def set_suggestion_channel(self, channel_id: int) -> None:
+        """Set Bot Suggestion Channel ID
+
+        Parameters
+        ----------
+        channel_id: int
+            The new channel ID
+        """
         self._suggestion_channel = channel_id
 
 

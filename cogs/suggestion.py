@@ -23,20 +23,21 @@ OTHER_REACTION = {
 class Suggestion(Cog):
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
+        self.message: Dict[int, dict] = {}
 
-    async def __fetch_suggestion_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
+    async def __fetch_suggestion_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         if guild.id == self.bot.config.guild_id:
-            return self.bot.get_channel(self.bot.config.suggestion_channel)
+            return self.bot.get_channel(self.bot.config.suggestion_channel)  # type: ignore
 
     async def get_or_fetch_message(
-        self, msg_id: int, *, guild: discord.Guild, channel: discord.TextChannel = None
+        self, msg_id: int, *, guild: discord.Guild, channel: discord.TextChannel | None = None
     ) -> Optional[discord.Message]:
         try:
             self.message[msg_id]
         except KeyError:
             if channel is None:
                 try:
-                    channel_id = self.bot.guild_configurations_cache[guild.id]["suggestion_channel"]
+                    channel_id = self.bot.config.suggestion_channel
                 except KeyError as e:
                     raise commands.BadArgument("No suggestion channel is setup") from e
             msg = await self.__fetch_message_from_channel(message=msg_id, channel=self.bot.get_channel(channel_id))
@@ -77,14 +78,15 @@ class Suggestion(Cog):
         embed: discord.Embed,
         ctx: Context,
         file: Optional[discord.File] = None,
-    ) -> Optional[discord.Message]:
+    ) -> discord.Message:
         channel: Optional[discord.TextChannel] = await self.__fetch_suggestion_channel(ctx.guild)
         if channel is None:
             raise commands.BadArgument(f"{ctx.author.mention} error fetching suggestion channel")
 
-        msg: discord.Message = await channel.send(content, embed=embed, file=file)
+        msg: discord.Message = await channel.send(content, embed=embed, file=file or discord.utils.MISSING)
 
-        await ctx.bulk_add_reactions(msg, *REACTION_EMOJI)
+        for reaction in REACTION_EMOJI:
+            await msg.add_reaction(reaction)
         thread = await msg.create_thread(name=f"Suggestion {ctx.author}")
 
         payload = {
@@ -102,14 +104,11 @@ class Suggestion(Cog):
         _id: int = message.id
         content = (
             f"{ctx.author.mention} your suggestion being posted.\n"
-            f"To delete the suggestion type: `{ctx.clean_prefix or await ctx.bot.get_guild_prefixes(ctx.guild.id)}suggest delete {_id}`\n"
+            f"To delete the suggestion type: `{ctx.clean_prefix or self.bot.config.prefix}suggest delete {_id}`\n"
             f"> {jump_url}"
         )
         try:
-            await ctx.author.send(
-                content,
-                view=ctx.send_view(),
-            )
+            await ctx.author.send(content)
         except discord.Forbidden:
             pass
 
@@ -135,7 +134,6 @@ class Suggestion(Cog):
         try:
             await user.send(
                 content,
-                view=ctx.send_view(),
             )
         except discord.Forbidden:
             pass
@@ -175,20 +173,23 @@ class Suggestion(Cog):
 
         msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
         if not msg:
-            return await ctx.send(
+            return await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
             )
 
         if ctx.channel.permissions_for(ctx.author).manage_messages:
             await msg.delete(delay=0)
-            await ctx.send(f"{ctx.author.mention} Done", delete_after=5)
+            await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
             return
 
-        if int(msg.embeds[0].footer.text.split(":")[1]) != ctx.author.id:
-            return await ctx.send(f"{ctx.author.mention} You don't own that 'suggestion'")
+        try:
+            if int(msg.embeds[0].footer.text.split(":")[1]) != ctx.author.id:  # type: ignore
+                return await ctx.reply(f"{ctx.author.mention} You don't own that 'suggestion'")
+        except (IndexError, AttributeError, ValueError):
+            pass
 
         await msg.delete(delay=0)
-        await ctx.send(f"{ctx.author.mention} Done", delete_after=5)
+        await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
 
     @suggest.command(name="resolved")
     @commands.bot_has_guild_permissions(manage_threads=True)
@@ -196,13 +197,20 @@ class Suggestion(Cog):
     async def suggest_resolved(self, ctx: Context, *, thread_id: int):
         """To mark the suggestion as resolved"""
         msg: Optional[discord.Message] = await self.get_or_fetch_message(thread_id, guild=ctx.guild)
+        if not msg:
+            return await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid"
+            )
 
-        if int(msg.embeds[0].footer.text.split(":")[1]) != ctx.author.id:
-            return await ctx.send(f"{ctx.author.mention} You don't own that 'suggestion'")
+        try:
+            if int(msg.embeds[0].footer.text.split(":")[1]) != ctx.author.id:  # type: ignore
+                return await ctx.reply(f"{ctx.author.mention} You don't own that 'suggestion'")
+        except (IndexError, AttributeError, ValueError):
+            pass
 
         thread: discord.Thread = await self.bot.getch(ctx.guild.get_channel, ctx.guild.fetch_channel, thread_id)
         if not msg or not thread:
-            return await ctx.send(
+            return await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid"
             )
         await thread.edit(
@@ -210,7 +218,7 @@ class Suggestion(Cog):
             locked=True,
             reason=f"Suggestion resolved by {ctx.author} ({ctx.author.id})",
         )
-        await ctx.send(f"{ctx.author.mention} Done", delete_after=5)
+        await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
 
     @suggest.command(name="note", aliases=["remark"])
     @commands.check_any(commands.has_permissions(manage_messages=True))
@@ -218,7 +226,7 @@ class Suggestion(Cog):
         """To add a note in suggestion embed"""
         msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
         if not msg:
-            return await ctx.send(
+            return await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
             )
 
@@ -228,11 +236,15 @@ class Suggestion(Cog):
         new_msg = await msg.edit(content=msg.content, embed=embed)
         self.message[new_msg.id]["message"] = new_msg
 
-        user_id = int(embed.footer.text.split(":")[1])
+        try:
+            user_id = int(embed.footer.text.split(":")[1])  # type: ignore
+        except (IndexError, AttributeError, ValueError):
+            return await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
+
         user = ctx.guild.get_member(user_id)
         await self.__notify_user(ctx, user, message=msg, remark=remark)
 
-        await ctx.send(f"{ctx.author.mention} Done", delete_after=5)
+        await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
 
     @suggest.command(name="clear", aliases=["cls"])
     @commands.check_any(commands.has_permissions(manage_messages=True))
@@ -245,7 +257,7 @@ class Suggestion(Cog):
 
         msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
         if not msg:
-            return await ctx.send(
+            return await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
             )
 
@@ -258,7 +270,7 @@ class Suggestion(Cog):
         for reaction in msg.reactions:
             if str(reaction.emoji) not in REACTION_EMOJI:
                 await msg.clear_reaction(reaction.emoji)
-        await ctx.send(f"{ctx.author.mention} Done", delete_after=5)
+        await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
 
     @suggest.command(name="flag")
     @commands.check_any(commands.has_permissions(manage_messages=True))
@@ -276,23 +288,28 @@ class Suggestion(Cog):
 
         msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
         if not msg:
-            return await ctx.send(
+            return await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
             )
 
         if msg.author.id != self.bot.user.id:
-            return await ctx.send(f"{ctx.author.mention} Invalid `{messageID}`")
+            return await ctx.reply(f"{ctx.author.mention} Invalid `{messageID}`")
 
         flag = flag.upper()
         try:
             payload: Dict[str, Union[int, str]] = OTHER_REACTION[flag]
         except KeyError:
-            return await ctx.send(f"{ctx.author.mention} Invalid Flag")
+            return await ctx.reply(f"{ctx.author.mention} Invalid Flag")
 
         embed: discord.Embed = msg.embeds[0]
-        embed.color = payload["color"]
+        if payload.get("color"):
+            embed.color = discord.Color.from_str(str(payload["color"]))
 
-        user_id = int(embed.footer.text.split(":")[1])
+        try:
+            user_id = int(embed.footer.text.split(":")[1])  # type: ignore
+        except (IndexError, AttributeError, ValueError):
+            return await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
+
         user: Optional[discord.Member] = await self.bot.get_or_fetch_member(ctx.guild, user_id)
         await self.__notify_user(ctx, user, message=msg, remark="")
 
@@ -300,7 +317,7 @@ class Suggestion(Cog):
         new_msg = await msg.edit(content=content, embed=embed)
         self.message[new_msg.id]["message"] = new_msg
 
-        await ctx.send(f"{ctx.author.mention} Done", delete_after=5)
+        await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
 
     @Cog.listener(name="on_raw_message_delete")
     async def suggest_msg_delete(self, payload) -> None:
@@ -313,20 +330,18 @@ class Suggestion(Cog):
         if message.author.bot or message.guild is None:
             return
 
-        ls = await self.bot.guild_configurations.find_one(
-            {"_id": message.guild.id, "suggestion_channel": message.channel.id}
-        )
+        ls = self.bot.config.suggestion_channel
         if not ls:
             return
 
-        if message.channel.id != ls["suggestion_channel"]:
+        if message.channel.id != ls:
             return
 
         if _ := await self.__parse_mod_action(message):
             return
 
         context: Context = await self.bot.get_context(message, cls=Context)
-        await self.suggest(context, suggestion=message.content)
+        await self.suggest(context, suggestion=message.clean_content)  # type: ignore
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
@@ -360,6 +375,8 @@ class Suggestion(Cog):
             self.message[payload.message_id]["message_downvote"] -= 1
 
     async def __parse_mod_action(self, message: discord.Message) -> Optional[bool]:
+        assert isinstance(message.author, discord.Member)
+
         if not self.__is_mod(message.author):
             return
 
@@ -367,7 +384,7 @@ class Suggestion(Cog):
             context: Context = await self.bot.get_context(message, cls=Context)
             # cmd: commands.Command = self.bot.get_command("suggest flag")
 
-            msg: Union[discord.Message, discord.DeletedReferencedMessage] = message.reference.resolved
+            msg: discord.Message | discord.DeletedReferencedMessage | None = getattr(message.reference, "resolved", None)
 
             if not isinstance(msg, discord.Message):
                 return
@@ -379,16 +396,18 @@ class Suggestion(Cog):
             await self.suggest_flag(context, msg.id, message.content.upper())
             return True
 
-    def __is_mod(self, member: discord.Member) -> bool:
+    def __is_mod(self, member: discord.Member) -> bool | None:
         try:
-            role_id = self.bot.guild_configurations_cache[member.guild.id]["mod_role"]
-            if role_id is None:
-                perms: discord.Permissions = member.guild_permissions
-                if any([perms.manage_guild, perms.manage_messages]):
-                    return True
-            return member._roles.has(role_id)
+            perms: discord.Permissions = member.guild_permissions
+            if any([perms.manage_guild, perms.manage_messages]):
+                return True
+
+            if role := discord.utils.get(member.roles, name="Moderator"):
+                return True
+
         except KeyError:
             return False
+
 
 async def setup(bot: Bot) -> None:
     await bot.add_cog(Suggestion(bot))

@@ -35,6 +35,8 @@ class Context(commands.Context[commands.Bot]):
         from .bot import Bot
 
     bot: Bot
+    author: discord.Member
+    guild: discord.Guild
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
