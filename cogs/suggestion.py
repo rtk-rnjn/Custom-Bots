@@ -167,7 +167,7 @@ class Suggestion(Cog):
 
     @suggest.command(name="set")
     @commands.cooldown(1, 60, commands.BucketType.member)
-    @commands.has_permissions(manage_guid=True)
+    @commands.has_permissions(manage_guild=True)
     async def suggest_set_channel(self, ctx: Context, *, channel: discord.TextChannel):
         """Set the suggestion channel"""
 

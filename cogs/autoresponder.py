@@ -129,7 +129,7 @@ class Autoresponder(Cog):
     async def on_ar_message(self, message: discord.Message) -> None:
         if message.author.bot or not message.guild or not message.content:
             return
-        
+
         bucket = self.cooldown.get_bucket(message)
         retry_after = bucket.update_rate_limit() if bucket else 0
         if retry_after:
@@ -248,7 +248,7 @@ class Autoresponder(Cog):
     async def on_ar_reaction(self, message: discord.Message) -> None:
         if message.author.bot or not message.guild:
             return
-        
+
         bucket = self.cooldown.get_bucket(message)
         retry_after = bucket.update_rate_limit() if bucket else 0
         if retry_after:
@@ -263,3 +263,7 @@ class Autoresponder(Cog):
 
             if message.content.lower() == trigger.lower():
                 await self.add_reaction(message, response)
+
+
+async def setup(bot: Bot) -> None:
+    await bot.add_cog(Autoresponder(bot))

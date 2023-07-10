@@ -108,7 +108,9 @@ class Bot(commands.Bot):
         self.timers = self.main_db["timerCollections"]  # pylint: disable=attribute-defined-outside-init
         self.giveaways = self.main_db["giveawayCollections"]  # pylint: disable=attribute-defined-outside-init
         self.ticket = self.main_db["ticketCollections"]  # pylint: disable=attribute-defined-outside-init
-        self.main_config_configuration = self.main_db["mainConfigCollection"]  # pylint: disable=attribute-defined-outside-init
+        self.main_config_configuration = self.main_db[
+            "mainConfigCollection"
+        ]  # pylint: disable=attribute-defined-outside-init
         self.main_config = self.main_config_configuration
 
     async def setup_hook(self) -> None:
