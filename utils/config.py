@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import logging
 import os
 from typing import Any
 
@@ -39,6 +40,8 @@ with contextlib.suppress(ImportError):
 
     load_dotenv()
     dotenv_values(".env")
+
+log = logging.getLogger("config")
 
 with open("bots.json", encoding="utf-8") as f:
     bots = json.load(f)
@@ -202,7 +205,9 @@ class Config:
 
             collection.update_one(query, update, upsert=True)
 
+        log.info("updating bot config to database ... from payload %s", self.__kw)
         await __internal_update()
+        log.info("updated bot config to database")
 
 
 class Null:
@@ -270,6 +275,7 @@ if not ENV.MONGO_URI:
     raise EnvironmentError("MONGO_URI not found in .env or environment variables")
 
 MONGO_CLIENT = MongoClient(str(ENV.MONGO_URI))
+log.info("connected to mongodb")
 
 
 def load_config(bot_id: int | None = None) -> list[Config]:
@@ -278,6 +284,7 @@ def load_config(bot_id: int | None = None) -> list[Config]:
     if not bot_id:
         ls = []
         for data in collection.find({}, {"_id": 0}):
+            log.debug("loading config %s", data)
             ls.append(Config(**data))
 
         return ls
@@ -287,3 +294,4 @@ def load_config(bot_id: int | None = None) -> list[Config]:
 
 
 BOT_CONFIGS = load_config()
+log.info("loaded %s bot configs", len(BOT_CONFIGS))

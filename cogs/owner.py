@@ -59,11 +59,11 @@ class Owner(Cog):
         """Update bot presence accordingly to invoke command
 
         Examples:
-        `[p]playing online Hello World!`
-        `[p]listening dnd Hello World!`
+        `- [p]playing online Hello World!`
+        `- [p]listening dnd Hello World!`
 
         The default status is dnd. Command can also be used as:
-        `[p]playing Hello World!`
+        `- [p]playing Hello World!`
         """
         p_types = {"playing": 0, "streaming": 1, "listening": 2, "watching": 3, None: 0}
         await ctx.bot.change_presence(

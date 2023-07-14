@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 from typing import Dict, Optional, Union
 
 import discord
@@ -19,6 +20,8 @@ OTHER_REACTION = {
     "DUPLICATE": {"emoji": "\N{HEAVY EXCLAMATION MARK SYMBOL}", "color": 0xDDD6D5},
 }
 
+log = logging.getLogger("suggestion")
+
 
 class Suggestion(Cog):
     def __init__(self, bot: Bot) -> None:
@@ -27,6 +30,7 @@ class Suggestion(Cog):
 
     async def __fetch_suggestion_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         if guild.id == self.bot.config.guild_id:
+            log.debug("fetching suggestion channel from config")
             return self.bot.get_channel(self.bot.config.suggestion_channel)  # type: ignore
 
     async def get_or_fetch_message(
@@ -55,13 +59,13 @@ class Suggestion(Cog):
             payload = {
                 "message_author": msg.author,
                 "message": msg,
-                "message_downvote": self.__get_emoji_count_from__msg(msg, emoji="\N{DOWNWARDS BLACK ARROW}"),
-                "message_upvote": self.__get_emoji_count_from__msg(msg, emoji="\N{UPWARDS BLACK ARROW}"),
+                "message_downvote": self.__get_emoji_count_from_msg(msg, emoji="\N{DOWNWARDS BLACK ARROW}"),
+                "message_upvote": self.__get_emoji_count_from_msg(msg, emoji="\N{UPWARDS BLACK ARROW}"),
             }
             self.message[message] = payload
             return msg
 
-    def __get_emoji_count_from__msg(
+    def __get_emoji_count_from_msg(
         self,
         msg: discord.Message,
         *,
@@ -87,6 +91,8 @@ class Suggestion(Cog):
 
         for reaction in REACTION_EMOJI:
             await msg.add_reaction(reaction)
+
+        log.debug("creating thread for suggestion %s", msg.id)
         thread = await msg.create_thread(name=f"Suggestion {ctx.author}")
 
         payload = {
@@ -109,6 +115,7 @@ class Suggestion(Cog):
         )
         try:
             await ctx.author.send(content)
+            log.debug("notified user %s on suggestion %s", ctx.author, _id)
         except discord.Forbidden:
             pass
 
@@ -132,9 +139,8 @@ class Suggestion(Cog):
             f"> {message.jump_url}"
         )
         try:
-            await user.send(
-                content,
-            )
+            await user.send(content)
+            log.debug("notified user %s on suggestion %s", user, message.id)
         except discord.Forbidden:
             pass
 
@@ -145,11 +151,13 @@ class Suggestion(Cog):
         """Suggest something. Abuse of the command may result in required mod actions"""
 
         if not ctx.invoked_subcommand:
-            embed = discord.Embed(description=suggestion, timestamp=ctx.message.created_at, color=0xADD8E6)
-            embed.set_author(name=str(ctx.author), icon_url=ctx.author.display_avatar.url)
-            embed.set_footer(
-                text=f"Author ID: {ctx.author.id}",
-                icon_url=getattr(ctx.guild.icon, "url", ctx.author.display_avatar.url),
+            embed = (
+                discord.Embed(description=suggestion, timestamp=ctx.message.created_at, color=0xADD8E6)
+                .set_author(name=str(ctx.author), icon_url=ctx.author.display_avatar.url)
+                .set_footer(
+                    text=f"Author ID: {ctx.author.id}",
+                    icon_url=getattr(ctx.guild.icon, "url", ctx.author.display_avatar.url),
+                )
             )
 
             file: Optional[discord.File] = None
@@ -178,13 +186,13 @@ class Suggestion(Cog):
     @suggest.command(name="delete")
     @commands.cooldown(1, 60, commands.BucketType.member)
     @commands.bot_has_permissions(read_message_history=True)
-    async def suggest_delete(self, ctx: Context, *, messageID: int):
+    async def suggest_delete(self, ctx: Context, *, ID: int):
         """To delete the suggestion you suggested"""
 
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
+        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
             )
 
         if ctx.channel.permissions_for(ctx.author).manage_messages:
@@ -232,12 +240,12 @@ class Suggestion(Cog):
 
     @suggest.command(name="note", aliases=["remark"])
     @commands.check_any(commands.has_permissions(manage_messages=True))
-    async def add_note(self, ctx: Context, messageID: int, *, remark: str):
+    async def add_note(self, ctx: Context, ID: int, *, remark: str):
         """To add a note in suggestion embed"""
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
+        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
             )
 
         embed: discord.Embed = msg.embeds[0]
@@ -261,14 +269,14 @@ class Suggestion(Cog):
     async def clear_suggestion_embed(
         self,
         ctx: Context,
-        messageID: int,
+        ID: int,
     ):
         """To remove all kind of notes and extra reaction from suggestion embed"""
 
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
+        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
             )
 
         embed: discord.Embed = msg.embeds[0]
@@ -284,7 +292,7 @@ class Suggestion(Cog):
 
     @suggest.command(name="flag")
     @commands.check_any(commands.has_permissions(manage_messages=True))
-    async def suggest_flag(self, ctx: Context, messageID: int, flag: str):
+    async def suggest_flag(self, ctx: Context, ID: int, flag: str):
         """To flag the suggestion.
 
         Avalibale Flags :-
@@ -296,14 +304,14 @@ class Suggestion(Cog):
         - DUPLICATE
         """
 
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(messageID, guild=ctx.guild)
+        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{messageID}`. Probably already deleted, or `{messageID}` is invalid"
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
             )
 
         if msg.author.id != self.bot.user.id:
-            return await ctx.reply(f"{ctx.author.mention} Invalid `{messageID}`")
+            return await ctx.reply(f"{ctx.author.mention} Invalid `{ID}`")
 
         flag = flag.upper()
         try:
@@ -406,17 +414,12 @@ class Suggestion(Cog):
             await self.suggest_flag(context, msg.id, message.content.upper())
             return True
 
-    def __is_mod(self, member: discord.Member) -> bool | None:
-        try:
-            perms: discord.Permissions = member.guild_permissions
-            if any([perms.manage_guild, perms.manage_messages]):
-                return True
+    def __is_mod(self, member: discord.Member) -> bool:
+        perms: discord.Permissions = member.guild_permissions
+        if any([perms.manage_guild, perms.manage_messages]):
+            return True
 
-            if discord.utils.get(member.roles, name="Moderator"):
-                return True
-
-        except KeyError:
-            return False
+        return bool(discord.utils.get(member.roles, name="Moderator"))
 
 
 async def setup(bot: Bot) -> None:

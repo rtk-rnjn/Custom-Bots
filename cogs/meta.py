@@ -239,7 +239,7 @@ class Meta(Cog):
                     f":green_circle: {statuses[0]}\n"
                     f":yellow_circle: {statuses[1]}\n"
                     f":red_circle: {statuses[2]}\n"
-                    f":black_circle: {statuses[3]} [Blame Discord]"
+                    f":black_circle: {statuses[3]}"
                 ),
                 True,
             ),

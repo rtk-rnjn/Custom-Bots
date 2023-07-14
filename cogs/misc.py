@@ -47,6 +47,7 @@ class Misc(Cog):
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
+        self.__cached_messages: dict[int, discord.Message | list[discord.Message]] = {}
 
     @commands.command(name="embed")
     async def embed_command(
@@ -162,6 +163,74 @@ class Misc(Cog):
 
         deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
         return Counter(m.author.display_name for m in deleted)
+
+    @Cog.listener()
+    async def on_message_delete(self, message: discord.Message):
+        if message.author.bot:
+            return
+
+        self.__cached_messages[message.channel.id] = message
+        log.debug("message deleted and cached in %s", message.channel.id)
+
+    @Cog.listener()
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        if before.author.bot:
+            return
+
+        self.__cached_messages[before.channel.id] = [before, after]
+        log.debug("message edited and cached in %s", before.channel.id)
+
+    @commands.command()
+    async def snipe(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None):  # type: ignore
+        """Snipe a deleted message.
+
+        Shows the last deleted message in the channel.
+        If a channel is specified, it will show the last deleted message in that channel.
+
+        **Example:**
+        - `[p]snipe` - Shows the last deleted message in the channel.
+        - `[p]snipe #general` - Shows the last deleted message in #general.
+        """
+
+        channel = channel or ctx.channel  # type: discord.abc.GuildChannel  # type: ignore
+
+        perms = channel.permissions_for(ctx.author)
+        if not perms.read_messages and not perms.read_message_history:
+            return await ctx.reply(f"{ctx.author.mention} you don't have permission to read messages in {channel.mention}")
+
+        if channel.id not in self.__cached_messages:
+            return await ctx.reply(f"{ctx.author.mention} there are no deleted messages in {channel.mention}")
+
+        message = self.__cached_messages.pop(channel.id)
+        log.debug("message sniped in %s", channel.id)
+
+        if isinstance(message, list):
+            before, after = message
+            if before.content == after.content:
+                return await ctx.reply(f"{ctx.author.mention} there are no deleted messages in {channel.mention}")
+
+            embed = (
+                discord.Embed(
+                    title="Message edited",
+                    description=(f"**Before:**\n{before.content}\n" f"**After:**\n{after.content}"),
+                    timestamp=before.created_at,
+                )
+                .set_author(name=before.author, icon_url=before.author.display_avatar.url)
+                .set_footer(text=f"Author ID: {before.author.id}")
+            )
+
+            return await ctx.reply(embed=embed)
+
+        embed = (
+            discord.Embed(
+                title="Message deleted",
+                description=message.content,
+                timestamp=message.created_at,
+            )
+            .set_author(name=message.author, icon_url=message.author.display_avatar.url)
+            .set_footer(text=f"Author ID: {message.author.id}")
+        )
+        await ctx.reply(embed=embed)
 
 
 async def setup(bot: Bot) -> None:

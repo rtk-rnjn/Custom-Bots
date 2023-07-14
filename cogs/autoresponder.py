@@ -1,6 +1,7 @@
 from __future__ import annotations
-import random
 
+import logging
+import random
 import re
 from typing import Union
 
@@ -25,6 +26,8 @@ RANDOM_GREETINGS = [
     "what's new",
     "what's popping",
 ]
+
+log = logging.getLogger("autoresponder")
 
 
 class Autoresponder(Cog):
@@ -51,28 +54,23 @@ class Autoresponder(Cog):
             .replace("{author_name}", message.author.name)
             .replace("{author_display_name}", message.author.display_name)
             .replace("{author_id}", str(message.author.id))
-
             # channel
             .replace("{channel}", str(message.channel))
             .replace("{channel_mention}", message.channel.mention)
             .replace("{channel_name}", message.channel.name)
             .replace("{channel_id}", str(message.channel.id))
-            
             # guild
             .replace("{guild}", str(message.guild))
             .replace("{guild_name}", message.guild.name)
             .replace("{guild_id}", str(message.guild.id))
-
             # message
             .replace("{message}", message.content)
             .replace("{message_id}", str(message.id))
-
             # bot
             .replace("{bot}", str(self.bot.user))
             .replace("{bot_mention}", self.bot.user.mention)
             .replace("{bot_name}", self.bot.user.name)
             .replace("{bot_id}", str(self.bot.user.id))
-
             # functions
             .replace("{!random_greeting}", random.choice(RANDOM_GREETINGS))
             .replace("{!random_int}", str(random.randint(0, 100)))
@@ -85,7 +83,9 @@ class Autoresponder(Cog):
             "id": self.bot.config.id,
             "ar_msg": {"$exists": True},
         }
-        data = await self.bot.main_config.find_one(query)
+        log.info("fetching autoresponder messages...")
+        data = await self.bot.main_config.find_one(query, {"ar_msg": 1})
+        log.info("fetched autoresponder messages with data %s", data)
         if data is None:
             return
 
@@ -99,7 +99,9 @@ class Autoresponder(Cog):
     async def save(self) -> None:
         query = {"id": self.bot.config.id}
         update = {"$set": {"ar_msg": self._ar_message_cache}}
+        log.info("saving autoresponder messages... %s", update)
         await self.bot.main_config.update_one(query, update, upsert=True)
+        log.info("saved autoresponder messages")
 
     @commands.group(name="autoresponder", aliases=["ar"], invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
@@ -150,6 +152,7 @@ class Autoresponder(Cog):
             return
 
         self._ar_message_cache[trigger] = str(response)
+        log.debug("added autoresponder for %s", trigger)
         await ctx.reply(f"Added a new autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none())
 
         self.__need_save = True
@@ -164,6 +167,7 @@ class Autoresponder(Cog):
         """
         try:
             del self._ar_message_cache[trigger]
+            log.debug("Removed autoresponder for %s", trigger)
         except KeyError:
             await ctx.reply(
                 f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
@@ -192,6 +196,7 @@ class Autoresponder(Cog):
     async def autoresponder_clear(self, ctx: Context) -> None:
         """Clear all autoresponders."""
         self._ar_message_cache.clear()
+        log.debug("cleared all autoresponders")
         await ctx.reply("Cleared all autoresponders.", allowed_mentions=discord.AllowedMentions.none())
 
         self.__need_save = True
@@ -270,6 +275,7 @@ class Autoresponder(Cog):
             return
 
         self._ar_reaction_cache[trigger] = str(reaction)
+        log.debug("added a new autoresponder reaction for %s", trigger)
         await ctx.reply(
             f"Added a new autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
         )
@@ -286,6 +292,7 @@ class Autoresponder(Cog):
         """
         try:
             del self._ar_reaction_cache[trigger]
+            log.debug("removed an autoresponder reaction for %s", trigger)
         except KeyError:
             await ctx.reply(
                 f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
@@ -316,6 +323,7 @@ class Autoresponder(Cog):
     async def autoresponder_reaction_clear(self, ctx: Context) -> None:
         """Clear all autoresponder reactions."""
         self._ar_reaction_cache.clear()
+        log.debug("cleared all autoresponder reactions")
         await ctx.reply("Cleared all autoresponder reactions.", allowed_mentions=discord.AllowedMentions.none())
 
         self.__need_save = True

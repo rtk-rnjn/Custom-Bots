@@ -25,6 +25,7 @@ SOFTWARE.
 from __future__ import annotations
 
 import asyncio
+import logging
 import random
 from typing import Any
 
@@ -33,6 +34,8 @@ from discord.ext import commands
 
 from core import Bot, Cog, Context
 from utils import ShortTime
+
+log = logging.getLogger("giveaway")
 
 
 class Giveaway(Cog):
@@ -71,7 +74,10 @@ class Giveaway(Cog):
             "Prize for the giveaway",
             "Number of winners?",
             "Required Role? (Role ID, Role Name, Role Mention) | `skip`, `none`, `no` for no role requirement",
-            "Required Server? (ID Only, bot must be in that server) `skip`, `none`, `no` for no role requirement",
+            (
+                "Required Server? (ID Only, bot must be in that server) `skip`, `none`, `no` for no role requirement\n"
+                "Bot must be in that server to check the user presence"
+            ),
         ]
 
         payload = {}
@@ -131,6 +137,8 @@ class Giveaway(Cog):
 
         await ctx.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
         await ctx.reply(embed=discord.Embed(description="Giveaway has been created!"))
+
+        log.debug("giveaway created with payload %s", payload)
         return main_post
 
     async def end_giveaway(self, bot: Bot, **kw: Any) -> list[int]:
