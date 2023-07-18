@@ -365,8 +365,6 @@ class Autoresponder(Cog):
             return
 
         for trigger, response in self._ar_reaction_cache.items():
-            trigger = re.escape(trigger.strip())
-
             try:
                 if re.fullmatch(rf"{trigger}", message.content, re.IGNORECASE):
                     await self.add_reaction(message, response)
