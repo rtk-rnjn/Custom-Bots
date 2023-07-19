@@ -212,7 +212,7 @@ class Misc(Cog):
             embed = (
                 discord.Embed(
                     title="Message edited",
-                    description=(f"**Before:**\n{before.content}\n" f"**After:**\n{after.content}"),
+                    description=(f"**Before:**\n{before.content}\n\n**After:**\n{after.content}"),
                     timestamp=before.created_at,
                 )
                 .set_author(name=before.author, icon_url=before.author.display_avatar.url)

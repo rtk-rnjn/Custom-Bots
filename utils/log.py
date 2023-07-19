@@ -32,6 +32,8 @@ __all__ = ("CustomFormatter",)
 
 
 class CustomFormatter(logging.Formatter):
+    """Custom formatter for logging."""
+
     GRAY = f"{Fore.LIGHTBLACK_EX}"
     GREY = GRAY
 

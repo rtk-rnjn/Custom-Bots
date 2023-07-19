@@ -30,7 +30,7 @@ from typing import Literal, Optional
 import discord
 from discord.ext import commands
 
-from core import Bot, Cog, Context
+from core import Bot, Cog, Context  # pylint: disable=import-error
 
 log = logging.getLogger("owner")
 
@@ -42,6 +42,7 @@ class Owner(Cog):
         self.bot = bot
 
     async def cog_check(self, ctx: Context) -> bool:
+        """Check if the user is owner of the bot."""
         if await self.bot.is_owner(ctx.author):
             return True
 
@@ -94,4 +95,5 @@ class Owner(Cog):
 
 
 async def setup(bot: Bot) -> None:
+    """Load the Owner cog."""
     await bot.add_cog(Owner(bot))

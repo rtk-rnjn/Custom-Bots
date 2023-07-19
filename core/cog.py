@@ -28,6 +28,8 @@ from discord.ext import commands
 
 
 class Cog(commands.Cog):
+    """A custom cog class for the bot."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ON_TESTING = False
+        self.ON_TESTING = False  # pylint: disable=invalid-name

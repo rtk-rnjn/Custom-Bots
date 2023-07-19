@@ -63,6 +63,30 @@ class OnCommand(Cog):
         )
         self.__commands_invoked.append(data)
 
+    @Cog.listener()
+    async def on_command_completion(self, ctx: Context) -> None:
+        assert ctx.guild and ctx.command and ctx.bot.user
+
+        log.debug("%s invoked by %s (%s) in %s (%s)", ctx.command, ctx.author, ctx.author.id, ctx.guild, ctx.guild.id)
+        data = UpdateOne(
+            {"id": ctx.bot.user.id},
+            {
+                "$addToSet": {
+                    "command_log": {
+                        "name": ctx.command.qualified_name,
+                        "author": ctx.author.id,
+                        "guild": ctx.guild.id,
+                        "channel": ctx.channel.id,
+                        "message": ctx.message.id,
+                        "message_content": ctx.message.content,
+                    }
+                }
+            },
+            upsert=True,
+        )
+
+        self.__commands_invoked.append(data)
+
     @tasks.loop(minutes=1)
     async def __update_commands(self) -> None:
         async with self.lock:

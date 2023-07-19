@@ -111,7 +111,7 @@ def convert_bool(entiry: str) -> bool | None:
     return None
 
 
-class MemberID(commands.Converter):
+class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
     """A converter that handles user mentions and user IDs."""
 
     async def convert(self, ctx: Context, argument: str) -> discord.Member | None:
@@ -141,7 +141,9 @@ class MemberID(commands.Converter):
         return m  # type: ignore
 
 
-class MessageID(commands.Converter):
+class MessageID(commands.Converter):  # pylint: disable=too-few-public-methods
+    """A converter that handles message mentions and message IDs."""
+
     async def convert(self, ctx: Context, argument: str) -> discord.Message | None:
         assert ctx.guild is not None
         try:
@@ -158,13 +160,15 @@ class MessageID(commands.Converter):
             message: discord.Message | None = discord.utils.get(ctx.bot.cached_messages, id=message_id)  # type: ignore
             if message is None:
                 try:
-                    message: discord.Message | None = await ctx.bot.get_or_fetch_message(ctx.channel, message_id)
+                    message: discord.Message | None = await ctx.bot.get_or_fetch_message(ctx.channel, message_id)  # type: ignore
                 except discord.NotFound:
                     raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
             return message
 
 
-class RoleID(commands.Converter):
+class RoleID(commands.Converter):  # pylint: disable=too-few-public-methods
+    """A converter that handles role mentions and role IDs."""
+
     async def convert(self, ctx: Context, argument: str) -> discord.Role | None:
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         try:
@@ -186,7 +190,7 @@ class RoleID(commands.Converter):
         return role
 
 
-class BannedMember(commands.Converter):
+class BannedMember(commands.Converter):  # pylint: disable=too-few-public-methods
     """A coverter that is used for fetching Banned Member of Guild"""
 
     async def convert(self, ctx: Context, argument: str) -> discord.User | None:

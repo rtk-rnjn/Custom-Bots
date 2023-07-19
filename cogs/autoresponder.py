@@ -1,3 +1,27 @@
+"""
+MIT License
+
+Copyright (c) 2023 Ritik Ranjan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -8,7 +32,7 @@ from typing import Union
 import discord
 from discord.ext import commands, tasks
 
-from core import Bot, Cog, Context
+from core import Bot, Cog, Context  # pylint: disable=import-error
 
 RANDOM_GREETINGS = [
     "hi",
@@ -30,14 +54,14 @@ RANDOM_GREETINGS = [
 log = logging.getLogger("autoresponder")
 
 
-class Autoresponder(Cog):
+class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
     """Automatically respond to messages."""
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self._ar_message_cache: dict[str, str] = {}
         self._ar_reaction_cache: dict[str, str] = {}
-        self.save_loop.start()
+        self.save_loop.start()  # pylint: disable=no-member
 
         self.__need_save = False
 
@@ -79,6 +103,7 @@ class Autoresponder(Cog):
         return response
 
     async def cog_load(self) -> None:
+        """Cog load handler."""
         query = {
             "id": self.bot.config.id,
             "ar_msg": {"$exists": True},
@@ -92,11 +117,13 @@ class Autoresponder(Cog):
         self._ar_message_cache = data["ar_msg"]
 
     async def cog_unload(self) -> None:
+        """Cog unload handler."""
         await self.save()
-        if self.save_loop.is_running():
-            self.save_loop.cancel()
+        if self.save_loop.is_running():  # pylint: disable=no-member
+            self.save_loop.cancel()  # pylint: disable=no-member
 
     async def save(self) -> None:
+        """Save the autoresponder messages to the database."""
         query = {"id": self.bot.config.id}
         update = {"$set": {"ar_msg": self._ar_message_cache}}
         log.info("saving autoresponder messages... %s", update)
@@ -109,6 +136,38 @@ class Autoresponder(Cog):
         """The base command for the autoresponder."""
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
+
+    @autoresponder.command(name="variables", aliases=["vars", "var"])
+    @commands.has_permissions(manage_guild=True)
+    async def autoresponder_variables(self, ctx: Context) -> None:
+        """Shows the variables for the autoresponder messages."""
+        embed = discord.Embed(
+            title="Autoresponder Variables",
+            description=(
+                "Bot variables:\n"
+                "- `{author}        ` - The author's full name.\n"
+                "- `{author_mention}` - The author's mention.\n"
+                "- `{author_name}   ` - The author's name.\n"
+                "- `{author_display_name}` - The author's display name.\n"
+                "- `{author_id}     ` - The author's ID.\n"
+                "- `{channel}       ` - The channel's full name.\n"
+                "- `{channel_mention}` - The channel's mention.\n"
+                "- `{channel_name}  ` - The channel's name.\n"
+                "- `{channel_id}    ` - The channel's ID.\n"
+                "- `{guild}         ` - The guild's full name.\n"
+                "- `{guild_name}    ` - The guild's name.\n"
+                "- `{guild_id}      ` - The guild's ID.\n"
+                "- `{message}       ` - The message's content.\n"
+                "- `{message_id}    ` - The message's ID.\n"
+                "- `{bot}           ` - The bot's full name.\n"
+                "- `{bot_mention}   ` - The bot's mention.\n"
+                "- `{bot_name}      ` - The bot's name.\n"
+                "- `{bot_id}        ` - The bot's ID.\n"
+                "- `{!random_greeting}` - A random greeting.\n"
+                "- `{!random_int}   ` - A random integer between 0 and 100."
+            ),
+        )
+        await ctx.reply(embed=embed)
 
     @autoresponder.command(name="add", aliases=["create"])
     @commands.has_permissions(manage_guild=True)
@@ -124,26 +183,7 @@ class Autoresponder(Cog):
         - `[p]ar add hi {author_mention} {!random_greeting} welcome to {guild_name}!`
 
         Bot variables:
-        - `{author}        ` - The author's full name.
-        - `{author_mention}` - The author's mention.
-        - `{author_name}   ` - The author's name.
-        - `{author_display_name}` - The author's display name.
-        - `{author_id}     ` - The author's ID.
-        - `{channel}       ` - The channel's full name.
-        - `{channel_mention}` - The channel's mention.
-        - `{channel_name}  ` - The channel's name.
-        - `{channel_id}    ` - The channel's ID.
-        - `{guild}         ` - The guild's full name.
-        - `{guild_name}    ` - The guild's name.
-        - `{guild_id}      ` - The guild's ID.
-        - `{message}       ` - The message's content.
-        - `{message_id}    ` - The message's ID.
-        - `{bot}           ` - The bot's full name.
-        - `{bot_mention}   ` - The bot's mention.
-        - `{bot_name}      ` - The bot's name.
-        - `{bot_id}        ` - The bot's ID.
-        - `{!random_greeting}` - A random greeting.
-        - `{!random_int}   ` - A random integer between 0 and 100.
+        - `[p]ar variables`
         """
         if trigger in self._ar_message_cache:
             await ctx.reply(
@@ -220,6 +260,7 @@ class Autoresponder(Cog):
 
     @Cog.listener("on_message")
     async def on_ar_message(self, message: discord.Message) -> None:
+        """Automatically respond to messages."""
         if not self._ar_message_cache:
             return
 
@@ -231,21 +272,28 @@ class Autoresponder(Cog):
         if retry_after:
             return
 
+        show = False
+        r = ""
         for trigger, response in self._ar_message_cache.items():
-            trigger = re.escape(trigger.strip())
             try:
                 if re.fullmatch(rf"{trigger}", message.content, re.IGNORECASE):
-                    await message.channel.send(self.formatter(response, message))
-                    return
+                    show, r = True, response
+                    break
             except re.error:
-                pass
+                show = False
             else:
                 if message.content.lower() == trigger.lower():
-                    await message.channel.send(self.formatter(response, message))
-                    return
+                    show, r = True, response
+                    break
+
+        if show and r:
+            await message.channel.send(self.formatter(r, message))
+            log.debug("responded to %s with %s", message.content, r)
+            return
 
     @tasks.loop(minutes=5)
     async def save_loop(self) -> None:
+        """Save the autoresponder messages every 5 minutes."""
         if self.__need_save:
             await self.save()
             self.__need_save = False
@@ -346,6 +394,7 @@ class Autoresponder(Cog):
         await ctx.reply(embed=embed)
 
     async def add_reaction(self, message: discord.Message, reaction: str) -> None:
+        """Safe way to add a reaction to a message."""
         try:
             await message.add_reaction(discord.PartialEmoji.from_str(reaction))
         except discord.HTTPException:
@@ -353,6 +402,7 @@ class Autoresponder(Cog):
 
     @Cog.listener("on_message")
     async def on_ar_reaction(self, message: discord.Message) -> None:
+        """Automatically react to messages."""
         if not self._ar_reaction_cache:
             return
 
@@ -368,14 +418,17 @@ class Autoresponder(Cog):
             try:
                 if re.fullmatch(rf"{trigger}", message.content, re.IGNORECASE):
                     await self.add_reaction(message, response)
-                    return
+                    log.debug("reacted to %s with %s", message.content, response)
+                    break
             except re.error:
                 pass
             else:
                 if message.content.lower() == trigger.lower():
                     await self.add_reaction(message, response)
-                    return
+                    log.debug("reacted to %s with %s", message.content, response)
+                    break
 
 
 async def setup(bot: Bot) -> None:
+    """Load the Autoresponder cog."""
     await bot.add_cog(Autoresponder(bot))

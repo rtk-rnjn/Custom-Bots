@@ -44,6 +44,7 @@ class OnMessage(Cog):
         self.collection = bot.mongo.customBots.messageCollection  # type: ignore
         self.lock = asyncio.Lock()
 
+    async def cog_load(self) -> None:
         self.__update_messages.start()
 
     async def cog_unload(self):
@@ -57,14 +58,17 @@ class OnMessage(Cog):
         if message.author.bot:
             return
 
+        if message.guild.id != self.bot.config.guild_id:
+            return
+
         data = UpdateOne(
-            {"channel_id": message.channel.id},
+            {"_id": self.bot.user.id},
             {
                 "$inc": {
                     "message_sent": 1,
                 },
                 "$addToSet": {
-                    "messages": {
+                    "message_log": {
                         "message_id": message.id,
                         "message_channel_id": message.channel.id,
                         "message_channel_name": str(message.channel),
@@ -78,7 +82,6 @@ class OnMessage(Cog):
                         "message_edited_at": message.edited_at,
                     },
                 },
-                "$pull": {"messages": {"message_created_at": {"$lt": message.created_at - datetime.timedelta(hours=12)}}},
             },
             upsert=True,
         )
@@ -93,13 +96,12 @@ class OnMessage(Cog):
             return
 
         data = UpdateOne(
-            {"channel_id": after.channel.id, "messages.message_id": before.id},
+            {"_id": self.bot.user.id, "message_log.message_id": before.id},
             {
                 "$set": {
-                    "messages.$.message_content": after.content,
-                    "messages.$.message_edited_at": after.edited_at,
+                    "message_log.$.message_content": after.content,
+                    "message_log.$.message_edited_at": after.edited_at,
                 },
-                "$pull": {"messages": {"message_created_at": {"$lt": after.created_at - datetime.timedelta(hours=12)}}},
                 "$inc": {
                     "message_edited": 1,
                 },
@@ -116,9 +118,9 @@ class OnMessage(Cog):
             return
 
         data = UpdateOne(
-            {"channel_id": message.channel.id, "messages.message_id": message.id},
+            {"_id": self.bot.user.id, "message_log.message_id": message.id},
             {
-                "$pull": {"messages": {"message_id": message.id}},
+                "$pull": {"message_log": {"message_id": message.id}},
                 "$inc": {
                     "message_deleted": 1,
                 },

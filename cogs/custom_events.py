@@ -25,21 +25,23 @@ SOFTWARE.
 from __future__ import annotations
 
 import contextlib
+import logging
 from typing import TYPE_CHECKING, Any
 
 import discord
 
-from core import Bot, Cog
+from core import Bot, Cog  # pylint: disable=import-error
 
 if TYPE_CHECKING:
     from cogs.giveaway import Giveaway
 
-import logging
 
 log = logging.getLogger("custom_events")
 
 
 class EventCustom(Cog):
+    """A custom event class for the bot."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.ON_TESTING = False
@@ -55,8 +57,9 @@ class EventCustom(Cog):
         messageChannel: int | None = None,
         messageAuthor: int | None = None,
         messageURL: str | None = None,
-        **kwargs: Any,
+        **_: Any,
     ):
+        """A custom parser on timer complete event."""
         if not content:
             return
         if embed is None:
@@ -82,6 +85,7 @@ class EventCustom(Cog):
 
     @Cog.listener("on_giveaway_timer_complete")
     async def extra_parser_giveaway(self, **kw: Any) -> None:
+        """A custom parser on giveaway timer complete event."""
         log.info("parsing giveaway...")
         extra = kw.get("extra")
         if not extra:
@@ -92,6 +96,7 @@ class EventCustom(Cog):
             await self._parse_giveaway(**main)
 
     async def _parse_giveaway(self, **kw: Any) -> None:
+        """Helper function to parse giveaway."""
         data: dict[str, Any] = await self.bot.giveaways.find_one(
             {
                 "message_id": kw.get("message_id"),
@@ -121,4 +126,5 @@ class EventCustom(Cog):
 
 
 async def setup(bot: Bot) -> None:
+    """Load the EventCustom cog."""
     await bot.add_cog(EventCustom(bot))

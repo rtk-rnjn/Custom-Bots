@@ -58,7 +58,7 @@ handler.setFormatter(CustomFormatter())
 logger.addHandler(handler)
 
 
-class Bot(commands.Bot):
+class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
     """Custom Bot implementation of commands.Bot"""
 
     mongo: Any
@@ -67,7 +67,7 @@ class Bot(commands.Bot):
 
     def __init__(self, config: Config):
         super().__init__(
-            command_prefix=self.get_prefix,
+            command_prefix=self.get_prefix,  # type: ignore
             intents=discord.Intents.all(),
             case_insensitive=True,
             strip_after_prefix=True,
@@ -83,7 +83,9 @@ class Bot(commands.Bot):
             3, 5, commands.BucketType.user
         )
         self._auto_spam_count: "Counter[int]" = Counter()
-        self._BotBase__cogs = commands.core._CaseInsensitiveDict()
+        self._BotBase__cogs = (
+            commands.core._CaseInsensitiveDict()
+        )  # pylint: disable=protected-access, no-member, invalid-name
 
         self._was_ready: bool = False
         self.lock: "asyncio.Lock" = asyncio.Lock()
@@ -108,10 +110,10 @@ class Bot(commands.Bot):
         self.timers = self.main_db["timerCollections"]  # pylint: disable=attribute-defined-outside-init
         self.giveaways = self.main_db["giveawayCollections"]  # pylint: disable=attribute-defined-outside-init
         self.ticket = self.main_db["ticketCollections"]  # pylint: disable=attribute-defined-outside-init
-        self.main_config_configuration = self.main_db[
+        self.main_config_configuration = self.main_db[  # pylint: disable=attribute-defined-outside-init
             "mainConfigCollection"
-        ]  # pylint: disable=attribute-defined-outside-init
-        self.main_config = self.main_config_configuration
+        ]
+        self.main_config = self.main_config_configuration  # pylint: disable=attribute-defined-outside-init
 
     async def setup_hook(self) -> None:
         await self.load_extension("jishaku")
@@ -147,9 +149,9 @@ class Bot(commands.Bot):
         logger.info("Logged in as %s", self.user)
         self.timer_task = self.loop.create_task(self.dispatch_timers())
 
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message):  # pylint: disable=arguments-differ
         """Handle message events."""
-        if message.author.bot or not message.guild:
+        if message.author.bot or message.guild is None:
             return
 
         if re.fullmatch(rf"<@!?{self.user.id}>", message.content):
@@ -194,7 +196,7 @@ class Bot(commands.Bot):
 
         return None
 
-    async def process_commands(self, message: Message) -> None:
+    async def process_commands(self, message: Message) -> None:  # pylint: disable=arguments-differ
         """Process commands and send errors if any."""
         ctx: Context = await self.get_context(message, cls=Context)
 
@@ -206,9 +208,12 @@ class Bot(commands.Bot):
                     return
             else:
                 self._auto_spam_count.pop(message.author.id, None)
+
         await self.invoke(ctx)
 
-    async def on_command_error(self, ctx: Context, error: commands.CommandError):
+    async def on_command_error(  # pylint: disable=arguments-differ, disable=too-many-return-statements
+        self, ctx: Context, error: commands.CommandError
+    ):
         """Handle command errors."""
         await self.wait_until_ready()
 
@@ -265,7 +270,7 @@ class Bot(commands.Bot):
             ctx.command.reset_cooldown(ctx)  # type: ignore
             return await ctx.reply(f"Invalid argument: {error}")
 
-        # return await ctx.reply(f"Error: {error}")
+        raise error
 
     async def get_active_timer(self, **filters: Any) -> dict:
         """Get the active timer."""
@@ -287,7 +292,7 @@ class Bot(commands.Bot):
 
         return await self.get_active_timer()
 
-    async def dispatch_timers(self):
+    async def dispatch_timers(self) -> None:
         """Main loop for dispatching timers."""
         try:
             logger.info("Starting timer dispatch")
@@ -314,7 +319,7 @@ class Bot(commands.Bot):
             logger.info("Timer dispatch cancelled")
             raise
 
-    async def call_timer(self, collection, **data: Any):
+    async def call_timer(self, collection, **data: Any) -> None:
         """Call the timer and delete it."""
         deleted: DeleteResult = await collection.delete_one({"_id": data["_id"]})
 
@@ -326,7 +331,8 @@ class Bot(commands.Bot):
         else:
             self.dispatch("timer_complete", **data)
 
-    async def short_time_dispatcher(self, collection, **data: Any):
+    async def short_time_dispatcher(self, collection, **data: Any) -> None:
+        """Sleep and call the timer."""
         await asyncio.sleep(discord.utils.utcnow().timestamp() - data["expires_at"])
 
         await self.call_timer(collection, **data)
@@ -432,7 +438,7 @@ class Bot(commands.Bot):
         except (discord.Forbidden, discord.HTTPException):
             return None
 
-    async def on_error(self, event: str, *args, **kwargs) -> None:
+    async def on_error(self, event: str, *args, **kwargs) -> None:  # pylint: disable=unused-argument
         """Log errors from events."""
         logger.error("Error in event %s.", event, exc_info=True)
 
@@ -447,11 +453,12 @@ class Bot(commands.Bot):
             await ctx.reply("This command is disabled in this guild.")
             raise commands.DisabledCommand("This command is disabled in this guild.")
 
-    async def get_prefix(self, message: Message) -> list[str]:
+    async def get_prefix(self, message: Message) -> list[str]:  # pylint: disable=arguments-differ
         """Get the prefix for the guild."""
         prefix = self.__config.prefix
         comp = re.compile(f"^({re.escape(prefix)}).*", flags=re.I)
         match = comp.match(message.content)
         if match is not None:
             prefix = match[1]
+
         return commands.when_mentioned_or(prefix)(self, message)

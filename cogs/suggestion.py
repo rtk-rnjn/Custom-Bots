@@ -1,3 +1,27 @@
+"""
+MIT License
+
+Copyright (c) 2023 Ritik Ranjan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 from __future__ import annotations
 
 import io
@@ -7,7 +31,7 @@ from typing import Dict, Optional, Union
 import discord
 from discord.ext import commands
 
-from core import Bot, Cog, Context
+from core import Bot, Cog, Context  # pylint: disable=import-error
 
 REACTION_EMOJI = ["\N{UPWARDS BLACK ARROW}", "\N{DOWNWARDS BLACK ARROW}"]
 
@@ -23,7 +47,9 @@ OTHER_REACTION = {
 log = logging.getLogger("suggestion")
 
 
-class Suggestion(Cog):
+class Suggestions(Cog):
+    """Suggestion cog for the bot."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.message: Dict[int, dict] = {}
@@ -36,21 +62,30 @@ class Suggestion(Cog):
     async def get_or_fetch_message(
         self, msg_id: int, *, guild: discord.Guild, channel: discord.TextChannel | None = None
     ) -> Optional[discord.Message]:
+        """Get or fetch a message from the cache or API."""
+        if guild.id != self.bot.config.guild_id:
+            return
+
+        channel_id = 0
         try:
             self.message[msg_id]
         except KeyError:
             if channel is None:
                 try:
-                    channel_id = self.bot.config.suggestion_channel
-                except KeyError as e:
+                    channel_id: int = self.bot.config.suggestion_channel
+                except (KeyError, AttributeError) as e:
                     raise commands.BadArgument("No suggestion channel is setup") from e
             msg = await self.__fetch_message_from_channel(message=msg_id, channel=self.bot.get_channel(channel_id))
         else:
             msg = self.message[msg_id]["message"]
 
-        return msg if msg.author.id == self.bot.user.id else None
+        return msg if (msg and (msg.author.id == self.bot.user.id)) else None
 
-    async def __fetch_message_from_channel(self, *, message: int, channel: discord.TextChannel):
+    async def __fetch_message_from_channel(
+        self, *, message: int, channel: discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None
+    ):
+        assert isinstance(channel, discord.TextChannel)
+
         async for msg in channel.history(
             limit=1,
             before=discord.Object(message + 1),
@@ -338,12 +373,14 @@ class Suggestion(Cog):
         await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
 
     @Cog.listener(name="on_raw_message_delete")
-    async def suggest_msg_delete(self, payload) -> None:
+    async def suggest_msg_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
+        """Remove the message from cache"""
         if payload.message_id in self.message:
             del self.message[payload.message_id]
 
     @Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        """Parse the message and create suggestion"""
         await self.bot.wait_until_ready()
         if message.author.bot or message.guild is None:
             return
@@ -362,12 +399,14 @@ class Suggestion(Cog):
         await self.suggest(context, suggestion=message.clean_content)  # type: ignore
 
     @Cog.listener()
-    async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
+    async def on_message_edit(self, _: discord.Message, after: discord.Message) -> None:
+        """Update the message in cache"""
         if after.id in self.message:
             self.message[after.id]["message"] = after
 
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        """Update the message in cache"""
         if payload.message_id not in self.message:
             return
 
@@ -381,6 +420,7 @@ class Suggestion(Cog):
 
     @Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        """Update the message in cache"""
         if payload.message_id not in self.message:
             return
 
@@ -423,4 +463,5 @@ class Suggestion(Cog):
 
 
 async def setup(bot: Bot) -> None:
-    await bot.add_cog(Suggestion(bot))
+    """Load the Suggestion cog."""
+    await bot.add_cog(Suggestions(bot))

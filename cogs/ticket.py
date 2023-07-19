@@ -31,46 +31,43 @@ from typing import Callable, Optional
 import discord
 from discord.ext import commands, tasks
 
-from core import Bot, Cog, Context
-from utils import MessageID, RoleID
+from core import Bot, Cog, Context  # pylint: disable=import-error
+from utils import MessageID, RoleID  # pylint: disable=import-error
 
 log = logging.getLogger("ticket")
 
-CACHE_HINT = dict[str, int | list[dict[str, int | str | list[int] | None]] | None]
 
-
-class Tickets(Cog):
+class Tickets(Cog):  # pylint: disable=too-many-public-methods
     """Ticket related commands."""
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.ticket_collection = self.bot.ticket
 
-        self._ticket_cache: CACHE_HINT = {}
-        self.database_updater.start()
-        """
-        {
-            "ticket_{BOT_ID}": {
-                "ticket_category_channel": INT,
-                "ticket_ping_role": INT,
-                "ticket_message": INT,
-                "ticket_message_channel": INT,
-                "ticket_log_channel": INT,
-                "active_tickets": [
-                    {
-                        "ticket_id": INT,
-                        "ticket_owner": INT,
-                        "ticket_channel": INT,
-                        "ticket_name": STR,
-                        "ticket_topic": STR,
-                        "ticket_members": [
-                            INT
-                        ]
-                    }
-                ]
-            }
-        }
-        """
+        self._ticket_cache = {}
+        self.database_updater.start()  # pylint: disable=no-member
+
+        # {
+        #     "ticket_{BOT_ID}": {
+        #         "ticket_category_channel": INT,
+        #         "ticket_ping_role": INT,
+        #         "ticket_message": INT,
+        #         "ticket_message_channel": INT,
+        #         "ticket_log_channel": INT,
+        #         "active_tickets": [
+        #             {
+        #                 "ticket_id": INT,
+        #                 "ticket_owner": INT,
+        #                 "ticket_channel": INT,
+        #                 "ticket_name": STR,
+        #                 "ticket_topic": STR,
+        #                 "ticket_members": [
+        #                     INT
+        #                 ]
+        #             }
+        #         ]
+        #     }
+        # }
 
     DEFAULT_PAYLOAD = {
         "ticket_category_channel": None,
@@ -83,18 +80,21 @@ class Tickets(Cog):
 
     @tasks.loop(minutes=5)
     async def database_updater(self) -> None:
+        """Update the ticket cache every 5 minutes."""
         log.info("Updating ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
 
     async def cog_load(self):
+        """Load the ticket cache when the cog is loaded."""
         await self._load_ticket_cache()
 
     async def cog_unload(self):
+        """Save the ticket cache when the cog is unloaded."""
         log.info("Saving ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
 
-        if self.database_updater.is_running():
-            self.database_updater.cancel()
+        if self.database_updater.is_running():  # pylint: disable=no-member
+            self.database_updater.cancel()  # pylint: disable=no-member
 
     async def _save_ticket_cache(self) -> None:
         if self._ticket_cache:
@@ -108,10 +108,11 @@ class Tickets(Cog):
         self._ticket_cache = {**self.DEFAULT_PAYLOAD, **self._ticket_cache}
 
     async def create_ticket(self, guild: discord.Guild, user: discord.Member) -> None:
+        """Create a ticket for the user."""
         category_channel = self._ticket_cache["ticket_category_channel"]  # type: int
         ping_role = self._ticket_cache["ticket_ping_role"]
 
-        category = guild.get_channel(category_channel or 0)  # type: discord.CategoryChannel | None
+        category = guild.get_channel(category_channel or 0)  # type: discord.CategoryChannel | None  # type: ignore
         if category is None:
             await user.send(
                 f"Ticket category channel not found. Ask your Administrator to set it up.\n> Sent from `{guild.name}`"
@@ -148,6 +149,7 @@ class Tickets(Cog):
         await self.log_ticket_event(guild=guild, ticket=data, event="create")
 
     async def delete_ticket(self, guild: discord.Guild, ticket: dict) -> None:
+        """Delete a ticket."""
         category_channel = self._ticket_cache["ticket_category_channel"]
         category = guild.get_channel(category_channel or 0)
         if category is None:
@@ -326,6 +328,7 @@ class Tickets(Cog):
     @ticket.group(name="setup", aliases=["config"], invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup(self, ctx: Context) -> None:
+        # sourcery skip: last-if-guard
         """Ticket setup walkthrough.
 
         Invoker must have `Manage Server` permissions.
@@ -367,7 +370,7 @@ class Tickets(Cog):
             if message is not None:
                 self._ticket_cache["ticket_message"] = message
             else:
-                maybe_create_new_message = await self.__wait_for_message(
+                maybe_create_new_message: str = await self.__wait_for_message(  # type: ignore
                     "Do you want me to create a new message? (yes/no)",
                     ctx=ctx,
                     check=check,
@@ -498,6 +501,7 @@ class Tickets(Cog):
 
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        """Handle the ticket reaction event."""
         message_id = payload.message_id
 
         if message_id != self._ticket_cache["ticket_message"]:
@@ -525,4 +529,5 @@ class Tickets(Cog):
 
 
 async def setup(bot: Bot) -> None:
+    """Load the Tickets cog."""
     await bot.add_cog(Tickets(bot))

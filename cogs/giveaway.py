@@ -142,6 +142,7 @@ class Giveaway(Cog):
         return main_post
 
     async def end_giveaway(self, bot: Bot, **kw: Any) -> list[int]:
+        log.info("ending giveaway with payload %s", kw)
         channel: discord.TextChannel = await bot.getch(bot.get_channel, bot.fetch_channel, kw.get("giveaway_channel"))
 
         msg: discord.Message = await bot.get_or_fetch_message(channel, kw["message_id"])  # type: ignore
@@ -152,13 +153,13 @@ class Giveaway(Cog):
 
         reactors = kw["reactors"]
         if not reactors:
+            log.info("no reactors found, fetching reactors from message")
             for reaction in msg.reactions:
                 if str(reaction.emoji) == "\N{PARTY POPPER}":
                     reactors: list[int] = [user.id async for user in reaction.users()]
                     break
-                reactors = []
 
-        self.__item__remove(reactors, bot.user.id)  # type: ignore
+        self.__item__remove(reactors, bot.user.id)
 
         if not reactors:
             return []
@@ -188,6 +189,8 @@ class Giveaway(Cog):
 
             if real_winners:
                 return real_winners
+
+            log.debug("no winners found, rerolling")
             win_count = win_count - len(real_winners)
             await asyncio.sleep(0)
 
@@ -210,9 +213,11 @@ class Giveaway(Cog):
             if required_guild:
                 is_member_none = await bot.get_or_fetch_member(required_guild, member.id)  # type: ignore
                 if is_member_none is None:
+                    log.debug("member %s is not in required guild %s", member, required_guild)
                     Giveaway.__item__remove(real_winners, member)
 
             if required_role and not member._roles.has(required_role):  # type: ignore
+                log.debug("member %s do not have required role %s", member, required_role)
                 Giveaway.__item__remove(real_winners, member)
 
         return real_winners
@@ -235,7 +240,6 @@ class Giveaway(Cog):
         endtime: float,
         required_role: int | None = None,
         required_guild: int | None = None,
-        required_level: int | None = None,
     ) -> dict[str, Any]:
         post_extra = {
             "message_id": message.id,
@@ -248,7 +252,6 @@ class Giveaway(Cog):
             "winners": winners,
             "required_role": required_role,
             "required_guild": required_guild,
-            "required_level": required_level,
         }
 
         return {

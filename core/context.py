@@ -31,12 +31,15 @@ from discord.ext import commands
 
 
 class Context(commands.Context[commands.Bot]):
+    """A custom context class for the bot."""
+
     if TYPE_CHECKING:
-        from .bot import Bot
+        from .bot import Bot  # pylint: disable=import-outside-toplevel
 
     bot: Bot
     author: discord.Member
     guild: discord.Guild
+    channel: discord.abc.GuildChannel
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

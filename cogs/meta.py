@@ -172,12 +172,11 @@ class Meta(Cog):
         """
         assert ctx.guild is not None
 
-        if not hasattr(ctx.guild.icon, "url"):
+        if not ctx.guild.icon:
             return await ctx.reply(f"{ctx.author.mention} {ctx.guild.name} has no icon yet!")
 
-        guild = ctx.guild
         embed = discord.Embed(timestamp=discord.utils.utcnow())
-        embed.set_image(url=guild.icon.url)  # type: ignore
+        embed.set_image(url=ctx.guild.icon.url)
 
         await ctx.reply(embed=embed)
 
@@ -186,10 +185,9 @@ class Meta(Cog):
         """Get the basic stats about the server"""
         assert ctx.guild is not None
 
-        guild = ctx.guild
         embed: discord.Embed = discord.Embed(
             title=f"Server Info: {ctx.guild.name}",
-            colour=ctx.guild.owner.colour,
+            colour=ctx.guild.owner.colour if ctx.guild.owner else None,
             timestamp=discord.utils.utcnow(),
         )
         if ctx.guild.icon:
@@ -269,9 +267,9 @@ class Meta(Cog):
         if info := [f":ballot_box_with_check: {label}" for feature, label in all_features.items() if feature in features]:
             embed.add_field(name="Features", value="\n".join(info))
 
-        if guild.premium_tier != 0:
-            boosts = f"Level {guild.premium_tier}\n{guild.premium_subscription_count} boosts"
-            last_boost = max(guild.members, key=lambda m: m.premium_since or guild.created_at)
+        if ctx.guild.premium_tier != 0:
+            boosts = f"Level {ctx.guild.premium_tier}\n{ctx.guild.premium_subscription_count} boosts"
+            last_boost = max(ctx.guild.members, key=lambda m: m.premium_since or ctx.guild.created_at)
             if last_boost.premium_since is not None:
                 boosts = f"{boosts}\nLast Boost: {last_boost} ({discord.utils.format_dt(last_boost.premium_since, 'R')})"
             embed.add_field(name="Boosts", value=boosts, inline=True)
@@ -279,7 +277,7 @@ class Meta(Cog):
             embed.add_field(name="Boosts", value="Level 0", inline=True)
 
         emoji_stats = Counter()
-        for emoji in guild.emojis:
+        for emoji in ctx.guild.emojis:
             if emoji.animated:
                 emoji_stats["animated"] += 1
                 emoji_stats["animated_disabled"] += not emoji.available
@@ -288,13 +286,13 @@ class Meta(Cog):
                 emoji_stats["disabled"] += not emoji.available
 
         fmt = (
-            f'Regular: {emoji_stats["regular"]}/{guild.emoji_limit}\n'
-            f'Animated: {emoji_stats["animated"]}/{guild.emoji_limit}\n'
+            f'Regular: {emoji_stats["regular"]}/{ctx.guild.emoji_limit}\n'
+            f'Animated: {emoji_stats["animated"]}/{ctx.guild.emoji_limit}\n'
         )
         if emoji_stats["disabled"] or emoji_stats["animated_disabled"]:
             fmt = f'{fmt}Disabled: {emoji_stats["disabled"]} regular, {emoji_stats["animated_disabled"]} animated\n'
 
-        fmt = f"{fmt}Total Emoji: {len(guild.emojis)}/{guild.emoji_limit*2}"
+        fmt = f"{fmt}Total Emoji: {len(ctx.guild.emojis)}/{ctx.guild.emoji_limit*2}"
         embed.add_field(name="Emoji", value=fmt, inline=True)
 
         if ctx.guild.me.guild_permissions.ban_members:
