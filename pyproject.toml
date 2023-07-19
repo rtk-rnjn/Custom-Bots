@@ -4,6 +4,8 @@ line-length = 125
 [tool.ruff]
 line-length = 150
 
+[tool.flake8]
+max-line-length = 150
 
 [tool.pylint.main]
 fail-under = 10

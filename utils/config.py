@@ -60,16 +60,16 @@ class Config:  # pylint: disable=too-many-instance-attributes
         **kwargs: str | int | bool | list[str],
     ) -> None:
         # fmt: off
-        self._id: int         = kwargs.pop("id")        # type: ignore
-        self._name: str       = kwargs.pop("name")      # type: ignore
-        self._token: str      = kwargs.get("token")     # type: ignore
-        self._owner_id: int   = kwargs.pop("owner_id")  # type: ignore
-        self._cogs: list[str] = kwargs.pop("cogs")      # type: ignore
-        self._prefix: str     = kwargs.pop("prefix")    # type: ignore
-        self._status: str     = kwargs.pop("status")    # type: ignore
-        self._activity: str   = kwargs.pop("activity")  # type: ignore
-        self._media: str      = kwargs.pop("media")     # type: ignore
-        self._guild_id: int   = kwargs.pop("guild_id")  # type: ignore
+        self._id: int         = kwargs.pop("id")        # type: ignore  # noqa
+        self._name: str       = kwargs.pop("name")      # type: ignore  # noqa
+        self._token: str      = kwargs.get("token")     # type: ignore  # noqa
+        self._owner_id: int   = kwargs.pop("owner_id")  # type: ignore  # noqa
+        self._cogs: list[str] = kwargs.pop("cogs")      # type: ignore  # noqa
+        self._prefix: str     = kwargs.pop("prefix")    # type: ignore  # noqa
+        self._status: str     = kwargs.pop("status")    # type: ignore  # noqa
+        self._activity: str   = kwargs.pop("activity")  # type: ignore  # noqa
+        self._media: str      = kwargs.pop("media")     # type: ignore  # noqa
+        self._guild_id: int   = kwargs.pop("guild_id")  # type: ignore  # noqa
         self._suggestion_channel: int | None = kwargs.pop("suggestion_channel", None)  # type: ignore
         # fmt: on
 

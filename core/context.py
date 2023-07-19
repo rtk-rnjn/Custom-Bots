@@ -44,7 +44,7 @@ class Context(commands.Context[commands.Bot]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.config = self.bot.main_db.configs
+        self.config = self.bot.main_db.mainConfigCollection
 
     async def send(self, *args, **kwargs) -> discord.Message:
         # check if the bot has permission to send messages

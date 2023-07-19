@@ -77,16 +77,16 @@ def main(
 
 # fmt: off
 QUESTIONS = {
-    "bot_id"  : f"{Fore.WHITE}Enter the bot's ID: {Fore.RESET}",
-    "bot_name": f"{Fore.WHITE}Enter the bot's name: {Fore.RESET}",
-    "prefix"  : f"{Fore.WHITE}Enter the bot's prefix: {Fore.RESET}",
-    "status"  : f"{Fore.WHITE}Enter the bot's status: {Fore.RESET}",
-    "activity": f"{Fore.WHITE}Enter the bot's activity: {Fore.RESET}",
-    "media"   : f"{Fore.WHITE}Enter the bot's media: {Fore.RESET}",
-    "owner_id": f"{Fore.WHITE}Enter the bot owner's ID: {Fore.RESET}",
-    "cogs"    : f"{Fore.WHITE}Enter the bot's cogs (separated by a comma): {Fore.RESET}",
-    "guild_id": f"{Fore.WHITE}Enter the bot's guild ID: {Fore.RESET}",
-    "token"   : f"{Fore.WHITE}Enter the bot's token: {Fore.RESET}",
+    "bot_id"  : f"{Fore.WHITE}Enter the bot's ID: {Fore.RESET}",  # noqa
+    "bot_name": f"{Fore.WHITE}Enter the bot's name: {Fore.RESET}",  # noqa
+    "prefix"  : f"{Fore.WHITE}Enter the bot's prefix: {Fore.RESET}",  # noqa
+    "status"  : f"{Fore.WHITE}Enter the bot's status: {Fore.RESET}",  # noqa
+    "activity": f"{Fore.WHITE}Enter the bot's activity: {Fore.RESET}",  # noqa
+    "media"   : f"{Fore.WHITE}Enter the bot's media: {Fore.RESET}",  # noqa
+    "owner_id": f"{Fore.WHITE}Enter the bot owner's ID: {Fore.RESET}",  # noqa
+    "cogs"    : f"{Fore.WHITE}Enter the bot's cogs (separated by a comma): {Fore.RESET}",  # noqa
+    "guild_id": f"{Fore.WHITE}Enter the bot's guild ID: {Fore.RESET}",  # noqa
+    "token"   : f"{Fore.WHITE}Enter the bot's token: {Fore.RESET}",  # noqa
 }
 # fmt: on
 
