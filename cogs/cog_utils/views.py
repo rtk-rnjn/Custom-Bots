@@ -32,21 +32,23 @@ import discord
 from discord.ext import commands
 from PIL import ImageColor
 
-from core import Context
+from core import Context  # pylint: disable=import-error
 
 
 class EmbedSend(discord.ui.Button):
+    """A button that sends the embed to the specified channel."""
+
     view: EmbedBuilder
 
     def __init__(self, channel: discord.TextChannel):
         self.channel = channel
-        super().__init__(label="Send to #{0}".format(channel.name), style=discord.ButtonStyle.green)
+        super().__init__(label=f"Send to #{channel.name}", style=discord.ButtonStyle.green)
 
     async def callback(self, interaction: discord.Interaction) -> T.Any:
         try:
             m: T.Optional[discord.Message] = await self.channel.send(embed=self.view.embed)
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             await interaction.response.send_message(f"An error occured: {e}", ephemeral=True)
 
         else:
@@ -58,6 +60,8 @@ class EmbedSend(discord.ui.Button):
 
 
 class EmbedCancel(discord.ui.Button["EmbedBuilder"]):
+    """A button that cancels the embed sending."""
+
     def __init__(self):
         super().__init__(label="Cancel", style=discord.ButtonStyle.red)
 
@@ -68,9 +72,12 @@ class EmbedCancel(discord.ui.Button["EmbedBuilder"]):
         await self.view.on_timeout()
 
 
-class BotColor:
+class BotColor:  # pylint: disable=too-few-public-methods
+    """A color converter that converts a string to a discord.Color object."""
+
     @classmethod
     async def convert(cls, ctx: Context, arg: str):
+        """Convert the string to a discord.Color object."""
         match, check = None, False
         with suppress(AttributeError):
             match = re.match(r"\(?(\d+),?\s*(\d+),?\s*(\d+)\)?", arg)
@@ -90,6 +97,8 @@ class BotColor:
 
 
 class Content(discord.ui.Modal, title="Edit Message Content"):
+    """A modal that takes input from the user."""
+
     _content: discord.ui.TextInput = discord.ui.TextInput(
         label="Content",
         placeholder="This text will be displayed over the embed",
@@ -98,11 +107,13 @@ class Content(discord.ui.Modal, title="Edit Message Content"):
         style=discord.TextStyle.long,
     )
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:  # pylint: disable=arguments-differ
         await interaction.response.defer()
 
 
 class BotView(discord.ui.View):
+    """A base view for all views."""
+
     message: discord.Message
     custom_id = None
 
@@ -111,7 +122,7 @@ class BotView(discord.ui.View):
         self.ctx = ctx
         self.bot = ctx.bot
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:  # pylint: disable=arguments-differ
         if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message(
                 "Sorry, you can't use this interaction as it is not started by you.",
@@ -131,20 +142,26 @@ class BotView(discord.ui.View):
                 await self.message.edit(view=self)
                 return
 
-    async def on_error(self, interaction: discord.Interaction, error: Exception, item) -> None:
+    async def on_error(  # pylint: disable=arguments-differ
+        self, interaction: discord.Interaction, error: Exception, item
+    ) -> None:
         self.ctx.bot.dispatch("command_error", self.ctx, error)
 
 
 class BotInput(discord.ui.Modal):
+    """A modal that takes input from the user."""
+
     def __init__(self, title: str):
         super().__init__(title=title)
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self, interaction: discord.Interaction) -> None:  # pylint: disable=arguments-differ
         with suppress(discord.NotFound):
             await interaction.response.defer()
 
 
 class EmbedOptions(discord.ui.Select):
+    """A select menu that allows you to edit the embed."""
+
     view: EmbedBuilder
 
     def __init__(self, ctx: Context):
@@ -180,14 +197,15 @@ class EmbedOptions(discord.ui.Select):
             ],
         )
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction):  # pylint: disable=too-many-branches, too-many-statements
+        """Handle the interaction."""
         assert self.view is not None
 
         if (selected := self.values[0]) == "content":
             modal = Content()
             await interaction.response.send_modal(modal)
             await modal.wait()
-            self.view.content = modal._content.value or ""
+            self.view.content = modal._content.value or ""  # pylint: disable=protected-access
 
             await self.view.refresh_view()
 
@@ -328,6 +346,8 @@ class EmbedOptions(discord.ui.Select):
 
 
 class EmbedBuilder(BotView):
+    """A view that builds an embed."""
+
     def __init__(self, ctx: Context, **kwargs: T.Any):
         super().__init__(ctx, timeout=100)
 
@@ -339,9 +359,11 @@ class EmbedBuilder(BotView):
 
     @property
     def formatted(self):
+        """Return the embed as a dict."""
         return self.embed.to_dict()
 
     async def refresh_view(self, to_del: T.Optional[discord.Message] = None):
+        """Refresh the embed builder."""
         if to_del is not None:
             await to_del.delete(delay=0)
 
@@ -349,17 +371,19 @@ class EmbedBuilder(BotView):
             self.message = await self.message.edit(content=self.content, embed=self.embed, view=self)
 
     async def rendor(self, **kwargs: T.Any):
+        """Rendor the embed builder."""
         self.message: discord.Message = await self.ctx.reply(
             kwargs.get("content", "\u200b"),
             embed=kwargs.get("embed", self.help_embed),
             view=self,
         )
 
-        self.content = self.message.content
-        self.embed = self.message.embeds[0]
+        self.content = self.message.content  # pylint: disable=attribute-defined-outside-init
+        self.embed = self.message.embeds[0]  # pylint: disable=attribute-defined-outside-init
 
     @property
     def help_embed(self):
+        """Return the help embed."""
         return (
             discord.Embed(title="Title", description="Description")
             .set_thumbnail(

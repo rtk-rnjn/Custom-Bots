@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import datetime
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING
 
 from dateutil.relativedelta import relativedelta
 from discord.ext import commands
@@ -61,7 +61,7 @@ class ShortTime:
         self,
         argument: str,
         *,
-        now: Optional[datetime.datetime] = None,
+        now: datetime.datetime | None = None,
         tzinfo: datetime.tzinfo = datetime.timezone.utc,
     ):
         match = self.compiled.fullmatch(argument)
@@ -77,7 +77,7 @@ class ShortTime:
 
         data = {k: int(v) for k, v in match.groupdict(default=0).items()}
         now = now or datetime.datetime.now(datetime.timezone.utc)
-        self.dt = now + relativedelta(**data)
+        self.dt = now + relativedelta(**data)  # type: ignore
         if tzinfo is not datetime.timezone.utc:
             self.dt = self.dt.astimezone(tzinfo)
 

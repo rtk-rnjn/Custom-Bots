@@ -102,8 +102,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
                 await member.kick(reason=reason)
             except discord.Forbidden:
                 return False
-            else:
-                return True
+
+            return True
 
         raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
 
@@ -114,8 +114,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             await guild.ban(user, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     async def unban_method(self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str | None) -> bool:
         """Unban a user from the server."""
@@ -124,8 +124,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             await guild.unban(user, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     async def lock_channel_method(self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str | None) -> bool:
         """Lock a text channel or voice channel."""
@@ -142,8 +142,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
                 await channel.set_permissions(channel.guild.default_role, overwrite=overwrites, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     async def unlock_channel_method(
         self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str | None
@@ -162,8 +162,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
                 await channel.set_permissions(channel.guild.default_role, overwrite=overwrites, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     async def purge_method(
         self,
@@ -184,7 +184,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         passed_after = discord.Object(after) if after is not None else None
 
         try:
-            if isinstance(
+            if not isinstance(
                 ctx.channel,
                 (
                     discord.TextChannel,
@@ -192,23 +192,23 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
                     discord.VoiceChannel,
                 ),
             ):
-                log.debug(
-                    "purging %s messages in channel %s in guild %s",
-                    limit,
-                    ctx.channel.name,
-                    ctx.guild.name,  # type: ignore
-                )
-                await ctx.channel.purge(
-                    limit=limit,
-                    before=passed_before,
-                    after=passed_after,
-                    check=predicate,
-                )
-                await self.mod_log(ctx=ctx, message=f"Purged {limit or 100} messages.", target=ctx.channel)  # type: ignore
-
-                return True
-            else:
                 raise commands.BadArgument("This command can only be used in text channels.")
+            log.debug(
+                "purging %s messages in channel %s in guild %s",
+                limit,
+                ctx.channel.name,
+                ctx.guild.name,  # type: ignore
+            )
+            await ctx.channel.purge(
+                limit=limit,
+                before=passed_before,
+                after=passed_after,
+                check=predicate,
+            )
+            await self.mod_log(ctx=ctx, message=f"Purged {limit or 100} messages.", target=ctx.channel)  # type: ignore
+
+            return True
+
         except discord.Forbidden:
             return False
 
@@ -261,8 +261,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             await member.edit(timed_out_until=None, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     async def add_role_method(
         self,
@@ -282,8 +282,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             await member.add_roles(role, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     async def remove_role_method(
         self,
@@ -303,8 +303,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             await member.remove_roles(role, reason=reason)
         except discord.Forbidden:
             return False
-        else:
-            return True
+
+        return True
 
     @commands.command(name="kick")
     @commands.has_permissions(kick_members=True)
@@ -600,7 +600,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command(name="custom")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def custom(self, ctx: Context, *, arguments: str):
+    async def custom(self, ctx: Context, *, arguments: str):  # pylint: disable=too-many-statements, too-many-branches
         """A more advanced purge command.
 
         This command uses a powerful "command line" syntax.

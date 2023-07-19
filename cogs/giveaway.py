@@ -32,8 +32,8 @@ from typing import Any
 import discord
 from discord.ext import commands
 
-from core import Bot, Cog, Context
-from utils import ShortTime
+from core import Bot, Cog, Context  # pylint: disable=import-error
+from utils import ShortTime  # pylint: disable=import-error
 
 log = logging.getLogger("giveaway")
 
@@ -52,8 +52,8 @@ class Giveaway(Cog):
             main = int(st)
         except ValueError as e:
             raise commands.BadArgument(error) from e
-        else:
-            return main
+
+        return main
 
     @staticmethod
     async def __wait_for_message(ctx: Context) -> str:
@@ -62,12 +62,13 @@ class Giveaway(Cog):
 
         try:
             msg: discord.Message = await ctx.bot.wait_for("message", check=check, timeout=60)
-        except asyncio.TimeoutError:
-            raise commands.BadArgument("You took too long to respond")
-        else:
-            return msg.content
+        except asyncio.TimeoutError as e:
+            raise commands.BadArgument("You took too long to respond") from e
 
-    async def make_giveaway(self, ctx: Context) -> dict[str, Any]:
+        return msg.content
+
+    async def make_giveaway(self, ctx: Context) -> dict[str, Any]:  # pylint: disable=too-many-locals
+        """Make a giveaway"""
         quest = [
             "In what channel you want to host giveaway? (Channel ID, Channel Name, Channel Mention)",
             "Duration for the giveaway",
@@ -86,7 +87,9 @@ class Giveaway(Cog):
         for index, question in enumerate(quest, start=1):
             await ctx.reply(embed=discord.Embed(description=question))
             if index == 1:
-                channel = await commands.TextChannelConverter().convert(ctx, argument=(await self.__wait_for_message(ctx)))
+                channel = await commands.TextChannelConverter().convert(
+                    ctx, argument=(await self.__wait_for_message(ctx))
+                )  # pylint: disable=superfluous-parens
                 CHANNEL = channel
                 payload["giveaway_channel"] = channel.id
 
@@ -130,10 +133,10 @@ class Giveaway(Cog):
         )
         embed.set_footer(text=f"ID: {ctx.message.id}", icon_url=ctx.author.display_avatar.url)
         CHANNEL = CHANNEL or ctx.channel
-        msg = await CHANNEL.send(embed=embed)
+        msg = await CHANNEL.send(embed=embed)  # type: ignore
         await msg.add_reaction("\N{PARTY POPPER}")
         ctx.bot.message_cache[msg.id] = msg
-        main_post = await self._create_giveaway_post(message=msg, **payload)  # type: ignore  # flake8: noqa
+        main_post = await self._create_giveaway_post(message=msg, **payload)  # type: ignore  # flake8: noqa  # pylint: disable=missing-kwoa
 
         await ctx.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
         await ctx.reply(embed=discord.Embed(description="Giveaway has been created!"))
@@ -142,6 +145,7 @@ class Giveaway(Cog):
         return main_post
 
     async def end_giveaway(self, bot: Bot, **kw: Any) -> list[int]:
+        """End a giveaway"""
         log.info("ending giveaway with payload %s", kw)
         channel: discord.TextChannel = await bot.getch(bot.get_channel, bot.fetch_channel, kw.get("giveaway_channel"))
 
@@ -216,7 +220,7 @@ class Giveaway(Cog):
                     log.debug("member %s is not in required guild %s", member, required_guild)
                     Giveaway.__item__remove(real_winners, member)
 
-            if required_role and not member._roles.has(required_role):  # type: ignore
+            if required_role and not member._roles.has(required_role):  # type: ignore  # pylint: disable=protected-access
                 log.debug("member %s do not have required role %s", member, required_role)
                 Giveaway.__item__remove(real_winners, member)
 
@@ -262,6 +266,7 @@ class Giveaway(Cog):
         }
 
     async def make_giveaway_drop(self, ctx: Context, *, duration: ShortTime, winners: int, prize: str):
+        """Make a giveaway"""
         payload = {
             "giveaway_channel": ctx.channel.id,
             "endtime": duration.dt.timestamp(),
@@ -356,7 +361,7 @@ class Giveaway(Cog):
         Example:
         `[p]gdelete 1234567890`
         """
-        if data := await self.bot.giveaways.find_one_and_delete({"message_id": message, "status": "ONGOING"}):
+        if await self.bot.giveaways.find_one_and_delete({"message_id": message, "status": "ONGOING"}):
             await ctx.reply("Giveaway deleted")
             await self.bot.delete_timer(_id=message)
         else:
@@ -387,6 +392,7 @@ class Giveaway(Cog):
         await self.bot.create_timer(_event_name="giveaway", **post)
 
     async def add_reactor(self, bot: Bot, payload: discord.RawReactionActionEvent):
+        """Add a reactor to the giveaway"""
         if str(payload.emoji) != "\N{PARTY POPPER}":
             return
 
@@ -396,6 +402,7 @@ class Giveaway(Cog):
         )
 
     async def remove_reactor(self, bot: Bot, payload: discord.RawReactionActionEvent):
+        """Remove a reactor from the giveaway"""
         if str(payload.emoji) != "\N{PARTY POPPER}":
             return
 
@@ -406,12 +413,15 @@ class Giveaway(Cog):
 
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        """Add a reactor to the giveaway"""
         await self.add_reactor(self.bot, payload)
 
     @Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
+        """Remove a reactor from the giveaway"""
         await self.remove_reactor(self.bot, payload)
 
 
 async def setup(bot: Bot) -> None:
+    """Load the Giveaway cog."""
     await bot.add_cog(Giveaway(bot))

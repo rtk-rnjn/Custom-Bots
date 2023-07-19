@@ -32,7 +32,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from core import Bot, Cog, Context
+from core import Bot, Cog, Context  # pylint: disable=import-error
 
 from .cog_utils import EmbedBuilder, EmbedCancel, EmbedSend
 
@@ -71,7 +71,7 @@ class Misc(Cog):
                 return
             try:
                 await channel.send(embed=discord.Embed.from_dict(json.loads(str(data))))  # type: ignore
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 await ctx.reply(f"{ctx.author.mention} you didn't provide the proper json object. Error raised: {e}")
         else:
             await ctx.reply(
@@ -166,6 +166,7 @@ class Misc(Cog):
 
     @Cog.listener()
     async def on_message_delete(self, message: discord.Message):
+        """Cache deleted messages."""
         if message.author.bot:
             return
 
@@ -174,6 +175,7 @@ class Misc(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        """Cache edited messages."""
         if before.author.bot:
             return
 
@@ -234,4 +236,5 @@ class Misc(Cog):
 
 
 async def setup(bot: Bot) -> None:
+    """Load the Misc cog."""
     await bot.add_cog(Misc(bot))

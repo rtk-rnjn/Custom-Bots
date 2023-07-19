@@ -25,19 +25,20 @@ SOFTWARE.
 from __future__ import annotations
 
 import asyncio
-import datetime
 import logging
 
 import discord
 from discord.ext import tasks
 from pymongo import UpdateOne
 
-from core import Bot, Cog
+from core import Bot, Cog  # pylint: disable=import-error
 
 log = logging.getLogger("events.on_msg")
 
 
 class OnMessage(Cog):
+    """Cog for logging messages sent by the bot."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.__messages_sent = []
@@ -45,14 +46,17 @@ class OnMessage(Cog):
         self.lock = asyncio.Lock()
 
     async def cog_load(self) -> None:
-        self.__update_messages.start()
+        """Start the task when the cog is loaded."""
+        self.__update_messages.start()  # pylint: disable=no-member
 
     async def cog_unload(self):
-        if self.__update_messages.is_running():
-            self.__update_messages.cancel()
+        """Cancel the task when the cog is unloaded."""
+        if self.__update_messages.is_running():  # pylint: disable=no-member
+            self.__update_messages.cancel()  # pylint: disable=no-member
 
     @Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        """Log messages sent by the bot."""
         assert message.guild and self.bot.user
 
         if message.author.bot:
@@ -90,6 +94,7 @@ class OnMessage(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
+        """Log edited messages sent by the bot."""
         assert before.guild and self.bot.user
 
         if before.author.bot or before.content == after.content:
@@ -112,6 +117,7 @@ class OnMessage(Cog):
 
     @Cog.listener()
     async def on_message_delete(self, message: discord.Message) -> None:
+        """Log deleted messages sent by the bot."""
         assert message.guild and self.bot.user
 
         if message.author.bot:
@@ -131,6 +137,7 @@ class OnMessage(Cog):
 
     @tasks.loop(minutes=1)
     async def __update_messages(self) -> None:
+        """Update the messages sent by the bot."""
         async with self.lock:
             if self.__messages_sent:
                 lst = self.__messages_sent.copy()

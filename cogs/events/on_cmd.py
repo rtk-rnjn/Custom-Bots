@@ -30,25 +30,29 @@ import logging
 from discord.ext import tasks
 from pymongo import UpdateOne
 
-from core import Bot, Cog, Context
+from core import Bot, Cog, Context  # pylint: disable=import-error
 
 log = logging.getLogger("events.on_cmd")
 
 
 class OnCommand(Cog):
+    """Cog for logging commands invoked by the bot."""
+
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
         self.__commands_invoked = []
         self.collection = bot.mongo.customBots.commandCollection  # type: ignore
-        self.__update_commands.start()
+        self.__update_commands.start()  # pylint: disable=no-member
         self.lock = asyncio.Lock()
 
     async def cog_unload(self) -> None:
-        if self.__update_commands.is_running():
-            self.__update_commands.cancel()
+        """Cancel the task when the cog is unloaded."""
+        if self.__update_commands.is_running():  # pylint: disable=no-member
+            self.__update_commands.cancel()  # pylint: disable=no-member
 
     @Cog.listener()
     async def on_command(self, ctx: Context) -> None:
+        """Log commands invoked by the bot."""
         assert ctx.guild and ctx.command and ctx.bot.user
 
         log.debug("%s invoked by %s (%s) in %s (%s)", ctx.command, ctx.author, ctx.author.id, ctx.guild, ctx.guild.id)
@@ -65,6 +69,7 @@ class OnCommand(Cog):
 
     @Cog.listener()
     async def on_command_completion(self, ctx: Context) -> None:
+        """Log commands invoked by the bot."""
         assert ctx.guild and ctx.command and ctx.bot.user
 
         log.debug("%s invoked by %s (%s) in %s (%s)", ctx.command, ctx.author, ctx.author.id, ctx.guild, ctx.guild.id)

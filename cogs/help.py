@@ -31,10 +31,12 @@ from discord.ext import commands
 from discord.ext.commands.errors import CommandError
 
 if TYPE_CHECKING:
-    from core import Cog, Context
+    from core import Cog, Context  # pylint: disable=import-error
 
 
 class Help(commands.HelpCommand):
+    """Help command."""
+
     def __init__(
         self,
     ):
@@ -46,10 +48,12 @@ class Help(commands.HelpCommand):
             }
         )
 
-    async def on_help_command_error(self, ctx: Context, error: CommandError):
+    async def on_help_command_error(self, ctx: Context, error: CommandError):  # pylint: disable=arguments-differ
+        """Handles errors that occur when invoking the help command."""
         await ctx.reply(f"Well this is awkward...```py\n{error}```")
 
-    async def send_bot_help(self, mapping):
+    async def send_bot_help(self, mapping):  # pylint: disable=arguments-differ
+        """Sends help about the bot."""
         ctx = self.context
         prefix = ctx.clean_prefix
         embed = discord.Embed(
@@ -67,7 +71,8 @@ class Help(commands.HelpCommand):
             )
         await ctx.reply(embed=embed)
 
-    async def send_cog_help(self, cog: Cog):
+    async def send_cog_help(self, cog: Cog):  # pylint: disable=arguments-differ
+        """Sends help about a cog."""
         ctx = self.context
         prefix = ctx.clean_prefix
         embed = discord.Embed(title=cog.qualified_name, description=cog.description)
@@ -80,7 +85,8 @@ class Help(commands.HelpCommand):
                 )
         await ctx.reply(embed=embed)
 
-    async def send_command_help(self, command: commands.Command):
+    async def send_command_help(self, command: commands.Command):  # pylint: disable=arguments-differ
+        """Sends help about a command."""
         ctx = self.context
         prefix = ctx.clean_prefix
         cmd_help = command.help or "No description"
@@ -91,7 +97,8 @@ class Help(commands.HelpCommand):
         embed = discord.Embed(title=f"Help for - `{prefix}{command.qualified_name}`", description=description)
         await ctx.reply(embed=embed)
 
-    async def send_group_help(self, group: commands.Group):
+    async def send_group_help(self, group: commands.Group):  # pylint: disable=arguments-differ
+        """Sends help about a command group."""
         ctx = self.context
         prefix = ctx.clean_prefix
         embed = discord.Embed(title=f"`{prefix}{group.qualified_name}`", description=group.help or "No description")
@@ -104,6 +111,7 @@ class Help(commands.HelpCommand):
                 )
         await ctx.reply(embed=embed)
 
-    async def send_error_message(self, error):
+    async def send_error_message(self, error):  # pylint: disable=arguments-differ
+        """Sends an error message in the channel."""
         ctx = self.context
         await ctx.reply(f"Well this is awkward...```py\n{error}```")

@@ -105,10 +105,12 @@ class Suggestions(Cog):
         msg: discord.Message,
         *,
         emoji: Union[discord.Emoji, discord.PartialEmoji, str],
-    ):
+    ) -> int:
         for reaction in msg.reactions:
             if str(reaction.emoji) == str(emoji):
                 return reaction.count
+
+        return 0
 
     async def __suggest(
         self,

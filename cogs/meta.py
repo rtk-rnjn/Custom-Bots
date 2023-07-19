@@ -31,7 +31,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from core import Bot, Cog, Context
+from core import Bot, Cog, Context  # pylint: disable=import-error
 
 log = logging.getLogger("meta")
 
@@ -74,7 +74,7 @@ class Meta(Cog):
             ("Status", f"{str(target.status).title()}", True),
             (
                 "Activity",
-                f"{str(target.activity.type).split('.')[-1].title() if target.activity else 'N/A'} {target.activity.name if target.activity else ''}",
+                f"{str(target.activity.type).split('.')[-1].title() if target.activity else 'N/A'} {target.activity.name if target.activity else ''}",  # pylint: disable=use-maxsplit-arg
                 True,
             ),
             ("Joined at", f"{discord.utils.format_dt(target.joined_at) if target.joined_at else 'N/A'}", True),
@@ -181,7 +181,7 @@ class Meta(Cog):
         await ctx.reply(embed=embed)
 
     @commands.command(name="serverinfo", aliases=["guildinfo", "si", "gi"])
-    async def server_info(self, ctx: Context):
+    async def server_info(self, ctx: Context):  # pylint: disable=too-many-locals, too-many-branches
         """Get the basic stats about the server"""
         assert ctx.guild is not None
 
@@ -311,4 +311,5 @@ class Meta(Cog):
 
 
 async def setup(bot: Bot) -> None:
+    """Load the Meta cog."""
     await bot.add_cog(Meta(bot))
