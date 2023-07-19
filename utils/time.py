@@ -72,8 +72,8 @@ class ShortTime:
                 if tzinfo is not datetime.timezone.utc:
                     self.dt = self.dt.astimezone(tzinfo)
                 return
-            else:
-                raise commands.BadArgument("invalid time provided")
+
+            raise commands.BadArgument("invalid time provided")
 
         data = {k: int(v) for k, v in match.groupdict(default=0).items()}
         now = now or datetime.datetime.now(datetime.timezone.utc)

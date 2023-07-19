@@ -47,11 +47,13 @@ __all__ = (
 )
 
 
-def can_execute_action(
+def can_execute_action(  # pylint: disable=too-many-return-statements
     ctx: Context,
     mod: discord.Member,
     target: discord.Member | discord.Role | discord.User | None,
 ) -> bool | None:
+    """Checks if the moderator can execute the action on the target"""
+
     assert ctx.guild
 
     if ctx.author == ctx.guild.owner:
@@ -72,8 +74,11 @@ def can_execute_action(
 
         return mod.top_role >= target.top_role
 
+    return None
+
 
 def convert_bool(entiry: str) -> bool | None:
+    """Converts a string to a boolean value"""
     yes = {
         "yes",
         "y",
@@ -88,6 +93,9 @@ def convert_bool(entiry: str) -> bool | None:
         "accept",
         "agree",
     }
+    if entiry.lower() in yes:
+        return True
+
     no = {
         "no",
         "n",
@@ -103,12 +111,7 @@ def convert_bool(entiry: str) -> bool | None:
         "disagree",
     }
 
-    if entiry.lower() in yes:
-        return True
-    elif entiry.lower() in no:
-        return False
-
-    return None
+    return False if entiry.lower() in no else None
 
 
 class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
@@ -124,15 +127,15 @@ class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
                 member_id = int(argument, base=10)
             except ValueError:
                 raise commands.BadArgument(f"{argument} is not a valid member or member ID.") from None
-            else:
-                m: discord.Member | discord.User | None = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
-                if m is None:
-                    # hackban case
-                    return type(  # type: ignore
-                        "_Hackban",
-                        (),
-                        {"id": member_id, "__str__": lambda s: f"Member ID {s.id}"},
-                    )()
+
+            m: discord.Member | discord.User | None = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
+            if m is None:
+                # hackban case
+                return type(  # type: ignore
+                    "_Hackban",
+                    (),
+                    {"id": member_id, "__str__": lambda s: f"Member ID {s.id}"},
+                )()
 
         if not can_execute_action(ctx, ctx.author, m):
             raise commands.BadArgument(
@@ -156,14 +159,14 @@ class MessageID(commands.Converter):  # pylint: disable=too-few-public-methods
             message_id = int(argument, base=10)
         except ValueError:
             raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
-        else:
-            message: discord.Message | None = discord.utils.get(ctx.bot.cached_messages, id=message_id)  # type: ignore
-            if message is None:
-                try:
-                    message: discord.Message | None = await ctx.bot.get_or_fetch_message(ctx.channel, message_id)  # type: ignore
-                except discord.NotFound:
-                    raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
-            return message
+
+        message: discord.Message | None = discord.utils.get(ctx.bot.cached_messages, id=message_id)  # type: ignore
+        if message is None:
+            try:
+                message: discord.Message | None = await ctx.bot.get_or_fetch_message(ctx.channel, message_id)  # type: ignore
+            except discord.NotFound:
+                raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
+        return message
 
 
 class RoleID(commands.Converter):  # pylint: disable=too-few-public-methods
@@ -178,10 +181,10 @@ class RoleID(commands.Converter):  # pylint: disable=too-few-public-methods
                 role_id = int(argument, base=10)
             except ValueError:
                 raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
-            else:
-                role: discord.Role | None = discord.utils.get(ctx.guild.roles, id=role_id)
-                if role is None:
-                    raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
+
+            role: discord.Role | None = discord.utils.get(ctx.guild.roles, id=role_id)
+            if role is None:
+                raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
 
         if not can_execute_action(ctx, ctx.author, role):
             raise commands.BadArgument(
@@ -213,7 +216,7 @@ class BannedMember(commands.Converter):  # pylint: disable=too-few-public-method
         raise commands.BadArgument("User Not Found! Probably this member has not been banned before.") from None
 
 
-class ActionReason(commands.Converter):
+class ActionReason(commands.Converter):  # pylint: disable=too-few-public-methods
     """Action reason converter"""
 
     async def convert(self, ctx: Context, argument: str | None = None) -> str:
@@ -227,7 +230,7 @@ class ActionReason(commands.Converter):
         return ret
 
 
-class ToAsync:
+class ToAsync:  # pylint: disable=too-few-public-methods
     """Converts a blocking function to an async function"""
 
     def __init__(self, *, executor: ThreadPoolExecutor | None = None) -> None:

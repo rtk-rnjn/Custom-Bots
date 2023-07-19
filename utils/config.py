@@ -52,7 +52,9 @@ all_cogs = bots["all_cogs"]
 __all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV", "MONGO_CLIENT", "BOT_CONFIGS", "Environment")
 
 
-class Config:
+class Config:  # pylint: disable=too-many-instance-attributes
+    """Bot Config"""
+
     def __init__(
         self,
         **kwargs: str | int | bool | list[str],
@@ -190,7 +192,7 @@ class Config:
 
     async def update_to_db(self) -> None:
         """Update the bot config to the database"""
-        from .converters import ToAsync
+        from .converters import ToAsync  # pylint: disable=import-outside-toplevel
 
         @ToAsync()
         def __internal_update() -> None:
@@ -211,6 +213,8 @@ class Config:
 
 
 class Null:
+    """Null Object"""
+
     def __repr__(self) -> str:
         return "Null()"
 
@@ -234,6 +238,8 @@ ANY = Null | str | list | bool | dict | int | None
 
 
 class Environment:
+    """Environment Variables"""
+
     def __init__(self):
         self.__dict = os.environ
 
@@ -242,6 +248,8 @@ class Environment:
 
     @staticmethod
     def parse_entity(entity: Any, *, return_null: bool = True) -> ANY:
+        """Parse an entity to a python object"""
+
         if entity is None:
             return Null() if return_null else None
 
@@ -279,6 +287,7 @@ log.info("connected to mongodb")
 
 
 def load_config(bot_id: int | None = None) -> list[Config]:
+    """Load the bot configs from the database"""
     collection = MONGO_CLIENT["customBots"]["mainConfigCollection"]
 
     if not bot_id:
