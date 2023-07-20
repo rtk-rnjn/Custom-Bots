@@ -125,7 +125,8 @@ class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
             try:
                 member_id = int(argument, base=10)
             except ValueError:
-                raise commands.BadArgument(f"{argument} is not a valid member or member ID.") from None
+                msg = f"{argument} is not a valid member or member ID."
+                raise commands.BadArgument(msg) from None
 
             m: discord.Member | discord.User | None = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
             if m is None:
@@ -137,8 +138,9 @@ class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
                 )()
 
         if not can_execute_action(ctx, ctx.author, m):
+            msg = f"{ctx.author.mention} can not {ctx.command.qualified_name} the {m}, as the their's role is above you"
             raise commands.BadArgument(
-                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {m}, as the their's role is above you",  # type: ignore
+                msg,  # type: ignore
             )
         return m  # type: ignore
 
@@ -158,14 +160,16 @@ class MessageID(commands.Converter):  # pylint: disable=too-few-public-methods
         try:
             message_id = int(argument, base=10)
         except ValueError:
-            raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
+            msg = f"{argument} is not a valid message or message ID."
+            raise commands.BadArgument(msg) from None
 
         message: discord.Message | None = discord.utils.get(ctx.bot.cached_messages, id=message_id)  # type: ignore
         if message is None:
             try:
                 message: discord.Message | None = await ctx.bot.get_or_fetch_message(ctx.channel, message_id)  # type: ignore
             except discord.NotFound:
-                raise commands.BadArgument(f"{argument} is not a valid message or message ID.") from None
+                msg = f"{argument} is not a valid message or message ID."
+                raise commands.BadArgument(msg) from None
         return message
 
 
@@ -181,15 +185,18 @@ class RoleID(commands.Converter):  # pylint: disable=too-few-public-methods
             try:
                 role_id = int(argument, base=10)
             except ValueError:
-                raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
+                msg = f"{argument} is not a valid role or role ID."
+                raise commands.BadArgument(msg) from None
 
             role: discord.Role | None = discord.utils.get(ctx.guild.roles, id=role_id)
             if role is None:
-                raise commands.BadArgument(f"{argument} is not a valid role or role ID.") from None
+                msg = f"{argument} is not a valid role or role ID."
+                raise commands.BadArgument(msg) from None
 
         if not can_execute_action(ctx, ctx.author, role):
+            msg = f"{ctx.author.mention} can not {ctx.command.qualified_name} the {role}, as the their's role is above you"
             raise commands.BadArgument(
-                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {role}, as the their's role is above you",  # type: ignore
+                msg,  # type: ignore
             )
         return role
 
@@ -207,7 +214,8 @@ class BannedMember(commands.Converter):  # pylint: disable=too-few-public-method
                 ban_entry = await ctx.guild.fetch_ban(discord.Object(id=member_id))
                 return ban_entry.user
             except discord.NotFound:
-                raise commands.BadArgument("User Not Found! Probably this member has not been banned before.") from None
+                msg = "User Not Found! Probably this member has not been banned before."
+                raise commands.BadArgument(msg) from None
 
         async for entry in ctx.guild.bans():
             if argument in (entry.user.name, str(entry.user)):
@@ -215,7 +223,8 @@ class BannedMember(commands.Converter):  # pylint: disable=too-few-public-method
             if str(entry.user) == argument:
                 return entry.user
 
-        raise commands.BadArgument("User Not Found! Probably this member has not been banned before.") from None
+        msg = "User Not Found! Probably this member has not been banned before."
+        raise commands.BadArgument(msg) from None
 
 
 class ActionReason(commands.Converter):  # pylint: disable=too-few-public-methods
@@ -228,7 +237,8 @@ class ActionReason(commands.Converter):  # pylint: disable=too-few-public-method
         length = 0 if argument is None else len(argument)
         if len(ret) > 512:
             reason_max = 512 - len(ret) + length
-            raise commands.BadArgument(f"Reason is too long ({length}/{reason_max})")
+            msg = f"Reason is too long ({length}/{reason_max})"
+            raise commands.BadArgument(msg)
         return ret
 
 

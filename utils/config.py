@@ -59,16 +59,16 @@ class Config:  # pylint: disable=too-many-instance-attributes
         **kwargs: str | int | bool | list[str] | None,
     ) -> None:
         # fmt: off
-        self._id: int         = kwargs.get("id")        # type: ignore  # noqa
-        self._name: str       = kwargs.get("name")      # type: ignore  # noqa
-        self._token: str      = kwargs.get("token")     # type: ignore  # noqa
-        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore  # noqa
-        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore  # noqa
-        self._prefix: str     = kwargs.get("prefix")    # type: ignore  # noqa
-        self._status: str     = kwargs.get("status")    # type: ignore  # noqa
-        self._activity: str   = kwargs.get("activity")  # type: ignore  # noqa
-        self._media: str      = kwargs.get("media")     # type: ignore  # noqa
-        self._guild_id: int   = kwargs.get("guild_id")  # type: ignore  # noqa
+        self._id: int         = kwargs.get("id")        # type: ignore
+        self._name: str       = kwargs.get("name")      # type: ignore
+        self._token: str      = kwargs.get("token")     # type: ignore
+        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore
+        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore
+        self._prefix: str     = kwargs.get("prefix")    # type: ignore
+        self._status: str     = kwargs.get("status")    # type: ignore
+        self._activity: str   = kwargs.get("activity")  # type: ignore
+        self._media: str      = kwargs.get("media")     # type: ignore
+        self._guild_id: int   = kwargs.get("guild_id")  # type: ignore
         # fmt: on
 
         self.__kw = kwargs
@@ -288,7 +288,8 @@ class Environment:
 ENV = Environment()
 
 if not ENV.MONGO_URI:
-    raise OSError("MONGO_URI not found in .env or environment variables")
+    msg = "MONGO_URI not found in .env or environment variables"
+    raise OSError(msg)
 
 MONGO_CLIENT = MongoClient(str(ENV.MONGO_URI))
 log.info("connected to mongodb")

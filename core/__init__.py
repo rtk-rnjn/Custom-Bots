@@ -21,6 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .bot import Bot  # noqa: F401, F403  # pylint: disable=unused-import
-from .cog import Cog  # noqa: F401, F403  # pylint: disable=unused-import
-from .context import Context  # noqa: F401, F403  # pylint: disable=unused-import
+from .bot import Bot  # noqa: F401  # pylint: disable=unused-import
+from .cog import Cog  # noqa: F401  # pylint: disable=unused-import
+from .context import Context  # noqa: F401  # pylint: disable=unused-import

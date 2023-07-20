@@ -310,7 +310,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
                 await self.call_timer(self.timers, **timers)
                 await asyncio.sleep(0)
         except (OSError, discord.ConnectionClosed, ConnectionFailure):
-            logger.error("Error dispatching timer", exc_info=True)
+            logger.exception("Error dispatching timer", exc_info=True)
             if self.timer_task:
                 self.timer_task.cancel()
                 self.timer_task = self.loop.create_task(self.dispatch_timers())
@@ -451,7 +451,8 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
         if ctx.guild and guild_id and ctx.guild.id != guild_id and not await ctx.bot.is_owner(ctx.author):
             await ctx.reply("This command is disabled in this guild.")
-            raise commands.DisabledCommand("This command is disabled in this guild.")
+            msg = "This command is disabled in this guild."
+            raise commands.DisabledCommand(msg)
 
     async def get_prefix(self, message: Message) -> list[str]:  # pylint: disable=arguments-differ
         """Get the prefix for the guild."""

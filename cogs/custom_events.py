@@ -49,7 +49,7 @@ class EventCustom(Cog):
     async def normal_parser(
         self,
         *,
-        embed: dict[str, Any] = None,  # type: ignore
+        embed: dict[str, Any] | None = None,  # type: ignore
         content: str | None = None,
         dm_notify: bool = False,
         is_todo: bool = False,

@@ -321,10 +321,12 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
             await ctx.reply(embed=discord.Embed(description=msg))
             message = await self.bot.wait_for("message", timeout=60.0, check=check)  # type: discord.Message
         except asyncio.TimeoutError as e:
-            raise commands.BadArgument("Ticket setup timed out.") from e
+            err = "Ticket setup timed out."
+            raise commands.BadArgument(err) from e
 
         if message.content.lower() == "cancel":
-            raise commands.BadArgument("Ticket setup cancelled.")
+            err = "Ticket setup cancelled."
+            raise commands.BadArgument(err)
         if message.content.lower() in {"none", "no"}:
             return None
         return message.content if convertor is None else await convertor.convert(ctx, message.content)

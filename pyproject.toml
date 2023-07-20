@@ -3,8 +3,8 @@ line-length = 125
 
 [tool.ruff]
 line-length = 150
-select = ["E", "F", "B", "Q", "W", "C", "N", "D", "ANN", "UP", "ASYNC", "S", "COM"]
-ignore = ["ANN101", "ANN002", "ANN003", "ANN401", "ANN102", "D107", "D105", "D401", "UP007", "S101"]
+select = ['ANN', 'ASYNC', 'B', 'C', 'COM', 'D', 'E', 'EM', 'F', 'FA', 'G', 'N', 'Q', 'S', 'T10', 'UP', 'W']
+ignore = ['ANN002', 'ANN003', 'ANN101', 'ANN102', 'ANN401', 'D105', 'D107', 'D401', 'S101', 'UP007']
 
 [tool.ruff.mccabe]
 max-complexity = 15

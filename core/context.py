@@ -39,6 +39,7 @@ class Context(commands.Context[commands.Bot]):
     author: discord.Member
     guild: discord.Guild
     channel: discord.abc.GuildChannel
+    command: commands.Command
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

@@ -73,7 +73,8 @@ class Suggestions(Cog):
                 try:
                     channel_id: int = self.bot.config.suggestion_channel
                 except (KeyError, AttributeError) as e:
-                    raise commands.BadArgument("No suggestion channel is setup") from e
+                    msg = "No suggestion channel is setup"
+                    raise commands.BadArgument(msg) from e
             msg = await self.__fetch_message_from_channel(message=msg_id, channel=self.bot.get_channel(channel_id))
         else:
             msg = self.message[msg_id]["message"]
@@ -121,7 +122,8 @@ class Suggestions(Cog):
     ) -> discord.Message:
         channel: Optional[discord.TextChannel] = await self.__fetch_suggestion_channel(ctx.guild)
         if channel is None:
-            raise commands.BadArgument(f"{ctx.author.mention} error fetching suggestion channel")
+            msg = f"{ctx.author.mention} error fetching suggestion channel"
+            raise commands.BadArgument(msg)
 
         msg: discord.Message = await channel.send(content, embed=embed, file=file or discord.utils.MISSING)
 

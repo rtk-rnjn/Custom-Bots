@@ -28,12 +28,11 @@ import datetime
 import logging
 import re
 import shlex
-from typing import Any, Optional, Union
+from typing import Annotated, Any, Optional, Union
 from collections.abc import Callable
 
 import discord
 from discord.ext import commands
-from typing import Annotated
 
 from core import Bot, Cog, Context  # pylint: disable=import-error
 from utils import ActionReason, BannedMember, MemberID, RoleID, ShortTime  # pylint: disable=import-error
@@ -92,7 +91,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     async def cog_check(self, ctx: Context) -> bool:
         """Check if the command can be executed in the invoked context."""
         if not ctx.guild:
-            raise commands.BadArgument("This command can only be used in a server.")
+            msg = "This command can only be used in a server."
+            raise commands.BadArgument(msg)
         return ctx.guild is not None
 
     async def kick_method(self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str | None) -> bool:
@@ -106,7 +106,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
 
             return True
 
-        raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
+        msg = f"User `{user}` is not a member of guild `{guild.name}`"
+        raise commands.BadArgument(msg)
 
     async def ban_method(self, *, user: discord.Member | discord.User, guild: discord.Guild, reason: str | None) -> bool:
         """Ban a user from the server."""
@@ -179,7 +180,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         await ctx.message.delete(delay=0.5)
 
         if limit > 1000:
-            raise commands.BadArgument("Can only purge up to 1000 messages at a time.")
+            msg = "Can only purge up to 1000 messages at a time."
+            raise commands.BadArgument(msg)
 
         passed_before = ctx.message if before is None else discord.Object(before)
         passed_after = discord.Object(after) if after is not None else None
@@ -189,7 +191,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
                 ctx.channel,
                 discord.TextChannel | discord.Thread | discord.VoiceChannel,
             ):
-                raise commands.BadArgument("This command can only be used in text channels.")
+                msg = "This command can only be used in text channels."
+                raise commands.BadArgument(msg)
             log.debug(
                 "purging %s messages in channel %s in guild %s",
                 limit,
@@ -220,15 +223,18 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         """Timeout a user from the server."""
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
+            msg = f"User `{user}` is not a member of guild `{guild.name}`"
+            raise commands.BadArgument(msg)
 
         if member.timed_out_until is not None and member.timed_out_until > discord.utils.utcnow():
+            msg = f"User `{member}` is already timed out. Their timeout will remove **{discord.utils.format_dt(member.timed_out_until, 'R')}**"
             raise commands.BadArgument(
-                f"User `{member}` is already timed out. Their timeout will remove **{discord.utils.format_dt(member.timed_out_until, 'R')}**",
+                msg,
             )
 
         if duration > discord.utils.utcnow() + datetime.timedelta(days=28):
-            raise commands.BadArgument("Timeout duration cannot be more than 28 days.")
+            msg = "Timeout duration cannot be more than 28 days."
+            raise commands.BadArgument(msg)
 
         try:
             log.debug("timing out %s in guild %s till %s", member, guild.name, duration)
@@ -248,7 +254,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         """Unmute a user from the server."""
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
+            msg = f"User `{user}` is not a member of guild `{guild.name}`"
+            raise commands.BadArgument(msg)
 
         if member.timed_out_until is None:
             return False
@@ -272,7 +279,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         """Add a role to a member."""
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
+            msg = f"User `{user}` is not a member of guild `{guild.name}`"
+            raise commands.BadArgument(msg)
 
         try:
             log.debug("adding role %s to %s in guild %s", role.name, member, guild.name)
@@ -293,7 +301,8 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         """Remove a role from a member."""
         member = guild.get_member(user.id)
         if member is None:
-            raise commands.BadArgument(f"User `{user}` is not a member of guild `{guild.name}`")
+            msg = f"User `{user}` is not a member of guild `{guild.name}`"
+            raise commands.BadArgument(msg)
 
         try:
             log.debug("removing role %s from %s in guild %s", role.name, member, guild.name)
