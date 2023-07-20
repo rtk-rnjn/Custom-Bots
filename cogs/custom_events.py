@@ -53,9 +53,9 @@ class EventCustom(Cog):
         content: str | None = None,
         dm_notify: bool = False,
         is_todo: bool = False,
-        messageChannel: int | None = None,  # noqa: 803
-        messageAuthor: int | None = None,  # noqa: 803
-        messageURL: str | None = None,  # noqa: 803
+        messageChannel: int | None = None,  # noqa: N803
+        messageAuthor: int | None = None,  # noqa: N803
+        messageURL: str | None = None,  # noqa: N803
         **_: Any,
     ) -> None:
         """A custom parser on timer complete event."""

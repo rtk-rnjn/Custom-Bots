@@ -310,7 +310,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
                 await self.call_timer(self.timers, **timers)
                 await asyncio.sleep(0)
         except (OSError, discord.ConnectionClosed, ConnectionFailure):
-            logger.exception("Error dispatching timer", exc_info=True)
+            logger.exception("Error dispatching timer")
             if self.timer_task:
                 self.timer_task.cancel()
                 self.timer_task = self.loop.create_task(self.dispatch_timers())
