@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -63,7 +62,7 @@ class ShortTime:
         *,
         now: datetime.datetime | None = None,
         tzinfo: datetime.tzinfo = datetime.timezone.utc,
-    ):
+    ) -> None:
         match = self.compiled.fullmatch(argument)
         if match is None or not match.group(0):
             match = self.discord_fmt.fullmatch(argument)

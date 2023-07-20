@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -29,11 +28,12 @@ import datetime
 import logging
 import re
 import shlex
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Callable
 
 import discord
 from discord.ext import commands
-from typing_extensions import Annotated
+from typing import Annotated
 
 from core import Bot, Cog, Context  # pylint: disable=import-error
 from utils import ActionReason, BannedMember, MemberID, RoleID, ShortTime  # pylint: disable=import-error
@@ -44,7 +44,8 @@ log = logging.getLogger("mod")
 class Arguments(argparse.ArgumentParser):
     """Custom ArgumentParser to override the error method."""
 
-    def error(self, message: str):
+    def error(self, message: str) -> None:
+        """Raise RuntimeError instead of ArgumentParser error."""
         raise RuntimeError(message)
 
 
@@ -62,7 +63,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         self.bot = bot
 
     async def mod_log(
-        self, *, ctx: Context, message: str | None = None, target: discord.Member | discord.User | discord.abc.GuildChannel
+        self, *, ctx: Context, message: str | None = None, target: discord.Member | discord.User | discord.abc.GuildChannel,
     ) -> None:
         """Factory method to send a mod log message."""
         embed = (
@@ -78,7 +79,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             )
         )
 
-        mod_channel_id = self.bot.config.mod_log_channel
+        mod_channel_id = self.bot.config.modlog_channel
         if mod_channel_id is None:
             return
 
@@ -146,7 +147,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         return True
 
     async def unlock_channel_method(
-        self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str | None
+        self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str | None,
     ) -> bool:
         """Unlock a text channel or voice channel."""
         try:
@@ -186,11 +187,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         try:
             if not isinstance(
                 ctx.channel,
-                (
-                    discord.TextChannel,
-                    discord.Thread,
-                    discord.VoiceChannel,
-                ),
+                discord.TextChannel | discord.Thread | discord.VoiceChannel,
             ):
                 raise commands.BadArgument("This command can only be used in text channels.")
             log.debug(
@@ -227,7 +224,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
 
         if member.timed_out_until is not None and member.timed_out_until > discord.utils.utcnow():
             raise commands.BadArgument(
-                f"User `{member}` is already timed out. Their timeout will remove **{discord.utils.format_dt(member.timed_out_until, 'R')}**"
+                f"User `{member}` is already timed out. Their timeout will remove **{discord.utils.format_dt(member.timed_out_until, 'R')}**",
             )
 
         if duration > discord.utils.utcnow() + datetime.timedelta(days=28):
@@ -326,6 +323,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         - The bot top role position is equal to or lower than the user top role position
 
         Example:
+        -------
         `[p]kick @user spamming` - kicks the user for "spamming"
         `[p]kick 1234567890 idk` - kicks the user with the ID 1234567890 for "idk"
 
@@ -359,6 +357,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         - The bot top role position is equal to or lower than the user top role position
 
         Example:
+        -------
         `[p]ban @user spamming` - bans the user for "spamming"
         `[p]ban 1234567890 idk` - bans the user with the ID 1234567890 for "idk"
 
@@ -387,6 +386,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         Both the bot and the user invoking the command must have the `Ban Members` permission.
 
         Example:
+        -------
         `[p]unban @user appeal accepted` - unbans the user for "appeal accepted"
         `[p]unban 1234567890 idk` - unbans the user with the ID 1234567890 for "idk"
 
@@ -422,6 +422,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             - Denies `Speak` permission for @everyone role
 
         Example:
+        -------
         `[p]lock #general spamming` - locks the #general channel for "spamming"
         `[p]lock 1234567890 idk` - locks the channel with the ID 1234567890 for "idk"
 
@@ -458,6 +459,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
             - Allows `Speak` permission for @everyone role
 
         Example:
+        -------
         `[p]unlock #general spamming` - unlocks the #general channel for "spamming"
         `[p]unlock 1234567890 idk` - unlocks the channel with the ID 1234567890 for "idk"
 
@@ -482,6 +484,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         And the bot must have the `Read Message History` permission.
 
         Example:
+        -------
         `[p]purge 50` - purges last 50 messages
         `[p]purge 100` - purges last 100 messages
 
@@ -501,14 +504,14 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def embeds(self, ctx: Context, search: int = 100):
+    async def embeds(self, ctx: Context, search: int = 100) -> None:
         """Removes messages that have embeds in them."""
         await self.purge_method(ctx, search, lambda e: len(e.embeds))
 
     @purge_command.command(name="regex")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _regex(self, ctx: Context, pattern: Optional[str] = None, search: int = 100):
+    async def _regex(self, ctx: Context, pattern: Optional[str] = None, search: int = 100) -> None:
         """Removed messages that matches the regex pattern."""
         pattern = pattern or r".*"
 
@@ -520,29 +523,30 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def files(self, ctx: Context, search: int = 100):
+    async def files(self, ctx: Context, search: int = 100) -> None:
         """Removes messages that have attachments in them."""
         await self.purge_method(ctx, search, lambda e: len(e.attachments))
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def images(self, ctx: Context, search: int = 100):
+    async def images(self, ctx: Context, search: int = 100) -> None:
         """Removes messages that have embeds or attachments."""
         await self.purge_method(ctx, search, lambda e: len(e.embeds) or len(e.attachments))
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def user(self, ctx: Context, member: discord.Member, search: int = 100):
+    async def user(self, ctx: Context, member: discord.Member, search: int = 100) -> None:
         """Removes all messages by the member."""
         await self.purge_method(ctx, search, lambda e: e.author == member)
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def contains(self, ctx: Context, *, substr: str):
+    async def contains(self, ctx: Context, *, substr: str) -> None:
         """Removes all messages containing a substring.
+
         The substring must be at least 3 characters long.
         """
         if len(substr) < 3:
@@ -553,34 +557,34 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command(name="bot", aliases=["bots"])
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _bot(self, ctx: Context, prefix: Optional[str] = None, search: int = 100):
+    async def _bot(self, ctx: Context, prefix: Optional[str] = None, search: int = 100) -> None:
         """Removes a bot user's messages and messages with their optional prefix."""
 
-        def predicate(m: discord.Message):
-            return (m.webhook_id is None and m.author.bot) or (prefix and m.content.startswith(prefix))
+        def predicate(m: discord.Message) -> bool:
+            return bool((m.webhook_id is None and m.author.bot) or (prefix and m.content.startswith(prefix)))
 
         await self.purge_method(ctx, search, predicate)
 
     @purge_command.command(name="emoji", aliases=["emojis"])
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _emoji(self, ctx: Context, search: int = 100):
+    async def _emoji(self, ctx: Context, search: int = 100) -> None:
         """Removes all messages containing custom emoji."""
         custom_emoji = re.compile(r"<a?:[a-zA-Z0-9\_]+:([0-9]+)>")
 
-        def predicate(m: discord.Message):
-            return custom_emoji.search(m.content)
+        def predicate(m: discord.Message) -> bool:
+            return bool(custom_emoji.search(m.content))
 
         await self.purge_method(ctx, search, predicate)
 
     @purge_command.command(name="reactions")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _reactions(self, ctx: Context, search: int = 100):
+    async def _reactions(self, ctx: Context, search: int = 100) -> None:
         """Removes all reactions from messages that have them."""
-
         if search > 2000:
-            return await ctx.reply(f"Too many messages to search for ({search}/2000)")
+            await ctx.reply(f"Too many messages to search for ({search}/2000)")
+            return
 
         total_reactions = 0
         async for message in ctx.history(limit=search, before=ctx.message):
@@ -593,14 +597,19 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command(name="all")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _all(self, ctx: Context, search: int = 100):
+    async def _all(self, ctx: Context, search: int = 100) -> None:
         """Removes all messages. This is equivalent to `[p]purge` command."""
         await self.purge_method(ctx, search, lambda e: True)
 
     @purge_command.command(name="custom")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def custom(self, ctx: Context, *, arguments: str):  # pylint: disable=too-many-statements, too-many-branches
+    async def custom(  # noqa: C901  # pylint: disable=too-many-statements, too-many-branches
+        self,
+        ctx: Context,
+        *,
+        arguments: str,
+    ) -> None:
         """A more advanced purge command.
 
         This command uses a powerful "command line" syntax.
@@ -627,14 +636,14 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         `--or`: Use logical OR for all options.
         `--not`: Use logical NOT for all options.
 
-        Examples:
+        Examples
+        --------
         - `[p]purge custom --user @user --contains "hello world" --embeds`
             - This will remove all messages by @user that contain "hello world" and have embeds.
 
         - `[p]purge custom --contains cum --not --user @user`
             - This will remove all messages that contain "cum" but are not by @user.
         """
-
         parser = Arguments(add_help=False, allow_abbrev=False)
         parser.add_argument("--user", nargs="+")
         parser.add_argument("--contains", nargs="+")
@@ -698,7 +707,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
 
         op = any if args._or else all  # pylint: disable=protected-access
 
-        def predicate(m: discord.Message):
+        def predicate(m: discord.Message) -> bool:
             r = op(p(m) for p in predicates)
             return not r if args._not else r  # pylint: disable=protected-access
 
@@ -721,7 +730,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         duration: ShortTime,
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
-    ):
+    ) -> None:
         """Timeout a user for a specified duration.
 
         Bot must have `Time Out Members` permission.
@@ -732,14 +741,14 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
 
         For example, `1h` would be 1 hour, `5m` would be 5 minutes, `2d` would be 2 days.
 
-        Examples:
+        Examples
+        --------
         - `[p]timeout @user 1h`
             - This will time out @user for 1 hour.
         """
-
         if await self.timeout_method(user=user, duration=duration.dt, reason=reason, guild=ctx.guild):
             await ctx.reply(
-                f"Successfully timed out {user}. Timeout will remove **{discord.utils.format_dt(duration.dt, 'R')}**."
+                f"Successfully timed out {user}. Timeout will remove **{discord.utils.format_dt(duration.dt, 'R')}**.",
             )
             await self.mod_log(ctx=ctx, target=user, message=reason)
 
@@ -752,17 +761,17 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: Annotated[discord.Member, MemberID],
         *,
         reason: Annotated[Optional[str], ActionReason] = None,
-    ):
+    ) -> None:
         """Untimeout a user.
 
         Bot must have `Time Out Members` permission.
         Also invoker must have `Time Out Members` and `Manage Messages` permissions.
 
-        Examples:
+        Examples
+        --------
         - `[p]untimeout @user`
             - This will remove the timeout from @user.
         """
-
         if await self.unmute_method(user=user, reason=reason, guild=ctx.guild):
             await ctx.reply(f"Successfully removed timeout from {user}.")
             await self.mod_log(ctx=ctx, target=user, message=reason)
@@ -776,7 +785,6 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         Bot must have `Manage Roles` permission.
         Also invoker must have `Manage Roles` permission.
         """
-
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
@@ -796,14 +804,15 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         Bot must have `Manage Roles` permission.
         Also invoker must have `Manage Roles` permission.
 
-        Examples:
+        Examples
+        --------
         - `[p]add role @user @role reason`
             - This will add @role to @user with the reason `reason`.
 
-        Notes:
+        Notes
+        -----
         - The reason is optional.
         """
-
         if await self.add_role_method(user=user, role=role, guild=ctx.guild, reason=reason):  # type: ignore
             await ctx.reply(f"Successfully added {role} to {user}.")
             await self.mod_log(ctx=ctx, target=user, message=reason)
@@ -817,7 +826,6 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         Bot must have `Manage Roles` permission.
         Also invoker must have `Manage Roles` permission.
         """
-
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
@@ -837,14 +845,15 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         Bot must have `Manage Roles` permission.
         Also invoker must have `Manage Roles` permission.
 
-        Examples:
+        Examples
+        --------
         - `[p]remove role @user @role reason`
             - This will remove @role from @user with the reason `reason`.
 
-        Notes:
+        Notes
+        -----
         - The reason is optional.
         """
-
         if await self.remove_role_method(user=user, role=role, guild=ctx.guild, reason=reason):
             await ctx.reply(f"Successfully removed {role} from {user}.")
             await self.mod_log(ctx=ctx, target=user, message=reason)

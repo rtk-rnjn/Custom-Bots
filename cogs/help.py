@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -25,6 +24,7 @@ SOFTWARE.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from collections.abc import Mapping
 
 import discord
 from discord.ext import commands
@@ -39,20 +39,20 @@ class Help(commands.HelpCommand):
 
     def __init__(
         self,
-    ):
+    ) -> None:
         super().__init__(
             command_attrs={
                 "hidden": True,
                 "help": "Shows help about the bot, a command, or a category",
                 "cooldown": commands.CooldownMapping.from_cooldown(1, 3.0, commands.BucketType.member),
-            }
+            },
         )
 
-    async def on_help_command_error(self, ctx: Context, error: CommandError):  # pylint: disable=arguments-differ
+    async def on_help_command_error(self, ctx: Context, error: CommandError) -> None:  # pylint: disable=arguments-differ
         """Handles errors that occur when invoking the help command."""
         await ctx.reply(f"Well this is awkward...```py\n{error}```")
 
-    async def send_bot_help(self, mapping):  # pylint: disable=arguments-differ
+    async def send_bot_help(self, mapping: Mapping) -> None:  # pylint: disable=arguments-differ
         """Sends help about the bot."""
         ctx = self.context
         prefix = ctx.clean_prefix
@@ -71,7 +71,7 @@ class Help(commands.HelpCommand):
             )
         await ctx.reply(embed=embed)
 
-    async def send_cog_help(self, cog: Cog):  # pylint: disable=arguments-differ
+    async def send_cog_help(self, cog: Cog) -> None:  # pylint: disable=arguments-differ
         """Sends help about a cog."""
         ctx = self.context
         prefix = ctx.clean_prefix
@@ -85,7 +85,7 @@ class Help(commands.HelpCommand):
                 )
         await ctx.reply(embed=embed)
 
-    async def send_command_help(self, command: commands.Command):  # pylint: disable=arguments-differ
+    async def send_command_help(self, command: commands.Command) -> None:  # pylint: disable=arguments-differ
         """Sends help about a command."""
         ctx = self.context
         prefix = ctx.clean_prefix
@@ -97,7 +97,7 @@ class Help(commands.HelpCommand):
         embed = discord.Embed(title=f"Help for - `{prefix}{command.qualified_name}`", description=description)
         await ctx.reply(embed=embed)
 
-    async def send_group_help(self, group: commands.Group):  # pylint: disable=arguments-differ
+    async def send_group_help(self, group: commands.Group) -> None:  # pylint: disable=arguments-differ
         """Sends help about a command group."""
         ctx = self.context
         prefix = ctx.clean_prefix
@@ -111,7 +111,7 @@ class Help(commands.HelpCommand):
                 )
         await ctx.reply(embed=embed)
 
-    async def send_error_message(self, error):  # pylint: disable=arguments-differ
+    async def send_error_message(self, error: commands.CommandError) -> None:  # pylint: disable=arguments-differ
         """Sends an error message in the channel."""
         ctx = self.context
         await ctx.reply(f"Well this is awkward...```py\n{error}```")

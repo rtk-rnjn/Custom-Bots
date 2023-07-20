@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -26,7 +25,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 
 import discord
 from discord.ext import commands, tasks
@@ -84,11 +84,11 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         log.info("Updating ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
 
-    async def cog_load(self):
+    async def cog_load(self) -> None:
         """Load the ticket cache when the cog is loaded."""
         await self._load_ticket_cache()
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         """Save the ticket cache when the cog is unloaded."""
         log.info("Saving ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
@@ -98,12 +98,12 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
 
     async def _save_ticket_cache(self) -> None:
         if self._ticket_cache:
-            BOT_ID = self.bot.user.id  # type: ignore
-            await self.ticket_collection.update_one({"_id": f"ticket_{BOT_ID}"}, {"$set": self._ticket_cache}, upsert=True)
+            bot_id = self.bot.user.id  # type: ignore
+            await self.ticket_collection.update_one({"_id": f"ticket_{bot_id}"}, {"$set": self._ticket_cache}, upsert=True)
 
     async def _load_ticket_cache(self) -> None:
-        BOT_ID = self.bot.user.id  # type: ignore
-        self._ticket_cache = await self.ticket_collection.find_one({"_id": f"ticket_{BOT_ID}"}) or {}
+        bot_id = self.bot.user.id  # type: ignore
+        self._ticket_cache = await self.ticket_collection.find_one({"_id": f"ticket_{bot_id}"}) or {}
 
         self._ticket_cache = {**self.DEFAULT_PAYLOAD, **self._ticket_cache}
 
@@ -115,7 +115,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         category = guild.get_channel(category_channel or 0)  # type: discord.CategoryChannel | None  # type: ignore
         if category is None:
             await user.send(
-                f"Ticket category channel not found. Ask your Administrator to set it up.\n> Sent from `{guild.name}`"
+                f"Ticket category channel not found. Ask your Administrator to set it up.\n> Sent from `{guild.name}`",
             )
             return
 
@@ -144,7 +144,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         self._ticket_cache["active_tickets"].append(data)
 
         await ticket.send(
-            f"{user.mention} {role.mention if role else ''} your ticket has been created. Please wait for a staff member to assist you."
+            f"{user.mention} {role.mention if role else ''} your ticket has been created. Please wait for a staff member to assist you.",
         )
         await self.log_ticket_event(guild=guild, ticket=data, event="create")
 
@@ -170,7 +170,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
     @commands.group(name="ticket", aliases=["tick"], invoke_without_command=True)
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     async def ticket(self, ctx: Context) -> None:
-        """Ticket related commands"""
+        """Ticket related commands."""
         if not ctx.invoked_subcommand:
             await ctx.send_help(ctx.command)
 
@@ -184,6 +184,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         You can only have one active ticket at a time.
 
         Example:
+        -------
         - `[p]ticket new`
         """
         active_tickets = self._ticket_cache["active_tickets"] or []  # type: list[dict]
@@ -204,6 +205,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         Bot must have `Manage Channels` and `Manage Roles` permissions.
 
         Example:
+        -------
         - `[p]ticket close`
         """
         active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
@@ -230,6 +232,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         Bot must have `Manage Channels` and `Manage Roles` permissions.
 
         Example:
+        -------
         - `[p]ticket add @member`
         """
         active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
@@ -258,7 +261,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         )
 
         self._ticket_cache["active_tickets"][self._ticket_cache["active_tickets"].index(ticket)]["ticket_members"].append(
-            member.id
+            member.id,
         )
 
         await ticket_channel.send(f"{member.mention} added to the ticket.")
@@ -267,11 +270,12 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
     @commands.bot_has_guild_permissions(manage_channels=True, manage_roles=True)
     @commands.cooldown(1, 60, commands.BucketType.user)
     async def ticket_remove(self, ctx: Context, *, member: discord.Member) -> None:
-        """Remove a member from your ticket
+        """Remove a member from your ticket.
 
         Bot must have `Manage Channels` and `Manage Roles` permissions.
 
         Example:
+        -------
         - `[p]ticket remove @member`
         """
         active_tickets = self._ticket_cache["active_tickets"]  # type: list[dict]
@@ -300,7 +304,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         )
 
         self._ticket_cache["active_tickets"][self._ticket_cache["active_tickets"].index(ticket)]["ticket_members"].remove(
-            member.id
+            member.id,
         )
 
         await ticket_channel.send(f"{member.mention} removed from the ticket.")
@@ -334,6 +338,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         Invoker must have `Manage Server` permissions.
 
         Example:
+        -------
         - `[p]ticket setup`
         """
         if not ctx.invoked_subcommand:
@@ -393,6 +398,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         Invoker must have `Manage Server` permissions.
 
         Example:
+        -------
         - `[p]ticket setup pingrole @role`
         """
         if role is None:
@@ -413,6 +419,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         Invoker must have `Manage Server` permissions.
 
         Example:
+        -------
         - `[p]ticket setup category #category`
         - `[p]ticket setup category 123456789`
         """
@@ -432,6 +439,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         Invoker must have `Manage Server` permissions.
 
         Example:
+        -------
         - `[p]ticket setup message 123456789`
         - `[p]ticket setup message https://discord.com/channels/123/456/789`
         """
@@ -448,11 +456,12 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
     @ticket_setup.command(name="logchannel", aliases=["log"])
     @commands.has_permissions(manage_guild=True)
     async def ticket_setup_logchannel(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:
-        """Set the ticket log channel
+        """Set the ticket log channel.
 
         Invoker must have `Manage Server` permissions.
 
         Example:
+        -------
         - `[p]ticket setup logchannel #channel`
         """
         if channel is None:
@@ -463,8 +472,8 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         self._ticket_cache["ticket_log_channel"] = channel.id
         await ctx.reply(f"Ticket log channel set to {channel.mention}.")
 
-    async def log_ticket_event(self, *, guild: discord.Guild, ticket: dict, event: str):
-        """Log a ticket event"""
+    async def log_ticket_event(self, *, guild: discord.Guild, ticket: dict, event: str) -> None:
+        """Log a ticket event."""
         log_channel = guild.get_channel(self._ticket_cache["ticket_log_channel"] or 0)
         if log_channel is None:
             return
@@ -492,7 +501,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
                         f"<@{member}> ({member})"
                         for member in ticket["ticket_members"]
                         if guild.get_member(member) is not None
-                    ]
+                    ],
                 ),
             )
         )

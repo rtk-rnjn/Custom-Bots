@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -61,7 +60,7 @@ class OnCommand(Cog):
             {
                 "$inc": {
                     f"command.{ctx.command.qualified_name}": 1,
-                }
+                },
             },
             upsert=True,
         )
@@ -84,8 +83,8 @@ class OnCommand(Cog):
                         "channel": ctx.channel.id,
                         "message": ctx.message.id,
                         "message_content": ctx.message.content,
-                    }
-                }
+                    },
+                },
             },
             upsert=True,
         )

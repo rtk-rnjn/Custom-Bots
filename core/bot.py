@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -32,7 +31,9 @@ import os
 import re
 from collections import Counter
 from typing import Any
+from collections.abc import Awaitable, Callable
 
+import aiohttp
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 import pymongo
@@ -59,13 +60,16 @@ logger.addHandler(handler)
 
 
 class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
-    """Custom Bot implementation of commands.Bot"""
+    """Custom Bot implementation of commands.Bot."""
 
     mongo: Any
     uptime: datetime.datetime
     user: discord.ClientUser
+    session: aiohttp.ClientSession
+    guild_id: int
+    sync_mongo: pymongo.MongoClient
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config) -> None:
         super().__init__(
             command_prefix=self.get_prefix,  # type: ignore
             intents=discord.Intents.all(),
@@ -77,18 +81,17 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             help_command=Help(),
         )
         self.cogs_to_load = config.cogs
-        self.session = None
 
-        self.spam_control: "commands.CooldownMapping" = commands.CooldownMapping.from_cooldown(
-            3, 5, commands.BucketType.user
+        self.spam_control: commands.CooldownMapping = commands.CooldownMapping.from_cooldown(
+            3, 5, commands.BucketType.user,
         )
-        self._auto_spam_count: "Counter[int]" = Counter()
+        self._auto_spam_count: Counter[int] = Counter()
         self._BotBase__cogs = (
             commands.core._CaseInsensitiveDict()
         )  # pylint: disable=protected-access, no-member, invalid-name
 
         self._was_ready: bool = False
-        self.lock: "asyncio.Lock" = asyncio.Lock()
+        self.lock: asyncio.Lock = asyncio.Lock()
         self.timer_task: asyncio.Task | None = None
         self._current_timer: dict[str, Any] | None = {}
         self._have_data: asyncio.Event = asyncio.Event()
@@ -116,6 +119,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         self.main_config = self.main_config_configuration  # pylint: disable=attribute-defined-outside-init
 
     async def setup_hook(self) -> None:
+        """Setup the bot."""
         await self.load_extension("jishaku")
         if len(self.cogs_to_load) == 1 and self.cogs_to_load[0] == "~":
             self.cogs_to_load = all_cogs
@@ -149,7 +153,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         logger.info("Logged in as %s", self.user)
         self.timer_task = self.loop.create_task(self.dispatch_timers())
 
-    async def on_message(self, message: discord.Message):  # pylint: disable=arguments-differ
+    async def on_message(self, message: discord.Message) -> None:  # pylint: disable=arguments-differ
         """Handle message events."""
         if message.author.bot or message.guild is None:
             return
@@ -183,7 +187,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         members = await guild.query_members(limit=1, user_ids=[member_id], cache=True)
         return members[0] if members else None
 
-    async def getch(self, get_function, fetch_function, entity) -> Any:
+    async def getch(self, get_function: Callable, fetch_function: Callable[..., Awaitable], entity: Any) -> Any:
         """Get an entity from cache or fetch if not found."""
         entity = get_function(entity)
         if entity is not None:
@@ -212,8 +216,8 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         await self.invoke(ctx)
 
     async def on_command_error(  # pylint: disable=arguments-differ, disable=too-many-return-statements
-        self, ctx: Context, error: commands.CommandError
-    ):
+        self, ctx: Context, error: commands.CommandError,
+    ) -> discord.Message | None:
         """Handle command errors."""
         await self.wait_until_ready()
 
@@ -257,11 +261,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
         if isinstance(
             error,
-            (
-                commands.MissingRequiredArgument,
-                commands.BadUnionArgument,
-                commands.TooManyArguments,
-            ),
+            commands.MissingRequiredArgument | commands.BadUnionArgument | commands.TooManyArguments,
         ):
             ctx.command.reset_cooldown(ctx)  # type: ignore
             return await ctx.reply(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.command.qualified_name}` for more info.")  # type: ignore
@@ -319,7 +319,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             logger.info("Timer dispatch cancelled")
             raise
 
-    async def call_timer(self, collection, **data: Any) -> None:
+    async def call_timer(self, collection, **data: Any) -> None:  # noqa: ANN001
         """Call the timer and delete it."""
         deleted: DeleteResult = await collection.delete_one({"_id": data["_id"]})
 
@@ -331,7 +331,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         else:
             self.dispatch("timer_complete", **data)
 
-    async def short_time_dispatcher(self, collection, **data: Any) -> None:
+    async def short_time_dispatcher(self, collection, **data: Any) -> None:  # noqa: ANN001
         """Sleep and call the timer."""
         await asyncio.sleep(discord.utils.utcnow().timestamp() - data["expires_at"])
 

@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -96,8 +95,8 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             .replace("{bot_name}", self.bot.user.name)
             .replace("{bot_id}", str(self.bot.user.id))
             # functions
-            .replace("{!random_greeting}", random.choice(RANDOM_GREETINGS))
-            .replace("{!random_int}", str(random.randint(0, 100)))
+            .replace("{!random_greeting}", random.choice(RANDOM_GREETINGS))  # noqa: S311
+            .replace("{!random_int}", str(random.randint(0, 100)))  # noqa: S311
         )
 
         return response
@@ -172,11 +171,12 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
     @autoresponder.command(name="add", aliases=["create"])
     @commands.has_permissions(manage_guild=True)
     async def autoresponder_add(self, ctx: Context, trigger: str, *, response: commands.clean_content) -> None:
-        """Add a new autoresponder
+        """Add a new autoresponder.
 
         The trigger can be a regex pattern or a normal string.
 
-        Examples:
+        Examples
+        --------
         - `[p]ar add hello Hello World!`
         - `[p]ar add ^hello$ Hello World!`
 
@@ -187,7 +187,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
         """
         if trigger in self._ar_message_cache:
             await ctx.reply(
-                f"There is already an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+                f"There is already an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -200,9 +200,10 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
     @autoresponder.command(name="remove", aliases=["delete"])
     @commands.has_permissions(manage_guild=True)
     async def autoresponder_remove(self, ctx: Context, trigger: str) -> None:
-        """Remove an autoresponder
+        """Remove an autoresponder.
 
-        Examples:
+        Examples
+        --------
         - `[p]ar remove hello`
         """
         try:
@@ -210,7 +211,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             log.debug("Removed autoresponder for %s", trigger)
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+                f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -249,7 +250,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             response = self._ar_message_cache[trigger]
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+                f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -308,11 +309,12 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
     @autoresponder_reaction.command(name="add", aliases=["create"])
     @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_add(self, ctx: Context, trigger: str, *, reaction: Union[str, discord.Emoji]) -> None:
-        """Add a new autoresponder reaction
+        """Add a new autoresponder reaction.
 
         The trigger can be a regex pattern or a normal string.
 
-        Examples:
+        Examples
+        --------
         - `[p]ar reaction add hello :wave:`
         """
         if trigger in self._ar_reaction_cache:
@@ -325,7 +327,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
         self._ar_reaction_cache[trigger] = str(reaction)
         log.debug("added a new autoresponder reaction for %s", trigger)
         await ctx.reply(
-            f"Added a new autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+            f"Added a new autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
         )
 
         self.__need_save = True
@@ -333,9 +335,10 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
     @autoresponder_reaction.command(name="remove", aliases=["delete"])
     @commands.has_permissions(manage_guild=True)
     async def autoresponder_reaction_remove(self, ctx: Context, trigger: str) -> None:
-        """Remove an autoresponder reaction
+        """Remove an autoresponder reaction.
 
-        Examples:
+        Examples
+        --------
         - `[p]ar reaction remove hello`
         """
         try:
@@ -343,12 +346,12 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             log.debug("removed an autoresponder reaction for %s", trigger)
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+                f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
         await ctx.reply(
-            f"Removed the autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+            f"Removed the autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
         )
 
         self.__need_save = True
@@ -384,7 +387,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             response = self._ar_reaction_cache[trigger]
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none()
+                f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 

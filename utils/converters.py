@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -27,7 +26,8 @@ from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
 
 import discord
 from discord.ext import commands
@@ -52,8 +52,7 @@ def can_execute_action(  # pylint: disable=too-many-return-statements
     mod: discord.Member,
     target: discord.Member | discord.Role | discord.User | None,
 ) -> bool | None:
-    """Checks if the moderator can execute the action on the target"""
-
+    """Checks if the moderator can execute the action on the target."""
     assert ctx.guild
 
     if ctx.author == ctx.guild.owner:
@@ -78,7 +77,7 @@ def can_execute_action(  # pylint: disable=too-many-return-statements
 
 
 def convert_bool(entiry: str) -> bool | None:
-    """Converts a string to a boolean value"""
+    """Converts a string to a boolean value."""
     yes = {
         "yes",
         "y",
@@ -139,7 +138,7 @@ class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
 
         if not can_execute_action(ctx, ctx.author, m):
             raise commands.BadArgument(
-                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {m}, as the their's role is above you"  # type: ignore
+                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {m}, as the their's role is above you",  # type: ignore
             )
         return m  # type: ignore
 
@@ -148,6 +147,7 @@ class MessageID(commands.Converter):  # pylint: disable=too-few-public-methods
     """A converter that handles message mentions and message IDs."""
 
     async def convert(self, ctx: Context, argument: str) -> discord.Message | None:
+        """Convert the argument to a message object."""
         assert ctx.guild is not None
         try:
             message: discord.Message | None = await commands.MessageConverter().convert(ctx, argument)  # type: ignore
@@ -173,6 +173,7 @@ class RoleID(commands.Converter):  # pylint: disable=too-few-public-methods
     """A converter that handles role mentions and role IDs."""
 
     async def convert(self, ctx: Context, argument: str) -> discord.Role | None:
+        """Convert the argument to a role object."""
         assert ctx.guild is not None and isinstance(ctx.author, discord.Member)
         try:
             role: discord.Role | None = await commands.RoleConverter().convert(ctx, argument)
@@ -188,15 +189,16 @@ class RoleID(commands.Converter):  # pylint: disable=too-few-public-methods
 
         if not can_execute_action(ctx, ctx.author, role):
             raise commands.BadArgument(
-                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {role}, as the their's role is above you"  # type: ignore
+                f"{ctx.author.mention} can not {ctx.command.qualified_name} the {role}, as the their's role is above you",  # type: ignore
             )
         return role
 
 
 class BannedMember(commands.Converter):  # pylint: disable=too-few-public-methods
-    """A coverter that is used for fetching Banned Member of Guild"""
+    """A coverter that is used for fetching Banned Member of Guild."""
 
     async def convert(self, ctx: Context, argument: str) -> discord.User | None:
+        """Convert the argument to a banned member."""
         assert ctx.guild is not None
 
         if argument.isdigit():
@@ -217,26 +219,26 @@ class BannedMember(commands.Converter):  # pylint: disable=too-few-public-method
 
 
 class ActionReason(commands.Converter):  # pylint: disable=too-few-public-methods
-    """Action reason converter"""
+    """Action reason converter."""
 
     async def convert(self, ctx: Context, argument: str | None = None) -> str:
-        """Convert the argument to a action string"""
+        """Convert the argument to a action string."""
         ret = f"{ctx.author} ({ctx.author.id}) -> {argument or 'no reason provided'}"
 
-        LEN = 0 if argument is None else len(argument)
+        length = 0 if argument is None else len(argument)
         if len(ret) > 512:
-            reason_max = 512 - len(ret) + LEN
-            raise commands.BadArgument(f"Reason is too long ({LEN}/{reason_max})")
+            reason_max = 512 - len(ret) + length
+            raise commands.BadArgument(f"Reason is too long ({length}/{reason_max})")
         return ret
 
 
 class ToAsync:  # pylint: disable=too-few-public-methods
-    """Converts a blocking function to an async function"""
+    """Converts a blocking function to an async function."""
 
     def __init__(self, *, executor: ThreadPoolExecutor | None = None) -> None:
         self.executor = executor or ThreadPoolExecutor()
 
-    def __call__(self, blocking: Callable[..., Any]) -> Callable[..., Any]:
+    def __call__(self, blocking: Callable[..., Any]) -> Callable[..., Any]:  # noqa: D102
         @wraps(blocking)
         async def wrapper(*args, **kwargs) -> Any:
             return await asyncio.get_event_loop().run_in_executor(self.executor, partial(blocking, *args, **kwargs))

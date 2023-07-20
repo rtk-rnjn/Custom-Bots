@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -54,11 +53,11 @@ class EventCustom(Cog):
         content: str | None = None,
         dm_notify: bool = False,
         is_todo: bool = False,
-        messageChannel: int | None = None,
-        messageAuthor: int | None = None,
-        messageURL: str | None = None,
+        messageChannel: int | None = None,  # noqa: 803
+        messageAuthor: int | None = None,  # noqa: 803
+        messageURL: str | None = None,  # noqa: 803
         **_: Any,
-    ):
+    ) -> None:
         """A custom parser on timer complete event."""
         if not content:
             return
@@ -102,12 +101,12 @@ class EventCustom(Cog):
                 "message_id": kw.get("message_id"),
                 "guild_id": kw.get("guild_id"),
                 "status": "ONGOING",
-            }
+            },
         )
         cog: Giveaway = self.bot.get_cog("Giveaway")  # type: ignore
         member_ids: list[int] = await cog.end_giveaway(self.bot, **data)
         channel: discord.TextChannel = await self.bot.getch(
-            self.bot.get_channel, self.bot.fetch_channel, kw.get("giveaway_channel")
+            self.bot.get_channel, self.bot.fetch_channel, kw.get("giveaway_channel"),
         )
         await self.bot.giveaways.find_one_and_update(
             {"message_id": kw.get("message_id"), "status": "ONGOING"},

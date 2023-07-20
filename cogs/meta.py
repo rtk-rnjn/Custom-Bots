@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -35,6 +34,8 @@ from core import Bot, Cog, Context  # pylint: disable=import-error
 
 log = logging.getLogger("meta")
 
+EMOJI_URL = "https://raw.githubusercontent.com/iamcal/emoji-data/master/img-twitter-72/{}.png"
+
 
 class Meta(Cog):
     """Commands for getting information about the bot or a user or any other meta stuff."""
@@ -56,8 +57,8 @@ class Meta(Cog):
 
     @commands.command(name="userinfo", aliases=["memberinfo", "ui", "mi"])
     @commands.bot_has_permissions(embed_links=True)
-    async def user_info(self, ctx: Context, *, member: Optional[discord.Member] = None):
-        """Get the basic stats about the member in the server"""
+    async def user_info(self, ctx: Context, *, member: Optional[discord.Member] = None) -> None:
+        """Get the basic stats about the member in the server."""
         target = member or ctx.author  # type: discord.Member  # type: ignore
         roles = list(target.roles)
         embed = discord.Embed(
@@ -74,7 +75,7 @@ class Meta(Cog):
             ("Status", f"{str(target.status).title()}", True),
             (
                 "Activity",
-                f"{str(target.activity.type).split('.')[-1].title() if target.activity else 'N/A'} {target.activity.name if target.activity else ''}",  # pylint: disable=use-maxsplit-arg
+                f"{str(target.activity.type).split('.')[-1].title() if target.activity else 'N/A'} {target.activity.name if target.activity else ''}",  # pylint: disable=use-maxsplit-arg, line-too-long  # noqa: E501
                 True,
             ),
             ("Joined at", f"{discord.utils.format_dt(target.joined_at) if target.joined_at else 'N/A'}", True),
@@ -106,8 +107,8 @@ class Meta(Cog):
         await ctx.reply(ctx.author.mention, embed=embed)
 
     @commands.command()
-    async def roleinfo(self, ctx: Context, *, role: discord.Role):
-        """To get the info regarding the server role"""
+    async def roleinfo(self, ctx: Context, *, role: discord.Role) -> None:
+        """To get the info regarding the server role."""
         embed = discord.Embed(
             title=f"Role Information: {role.name}",
             description=f"ID: `{role.id}`",
@@ -146,16 +147,14 @@ class Meta(Cog):
         embed.description = f"Key perms: {', '.join(perms or ['NA'])}"
         embed.set_footer(text=f"ID: {role.id}")
         if role.unicode_emoji:
-            embed.set_thumbnail(
-                url=f"https://raw.githubusercontent.com/iamcal/emoji-data/master/img-twitter-72/{ord(list(role.unicode_emoji)[0]):x}.png"
-            )
+            embed.set_thumbnail(url=EMOJI_URL.format(f"{ord(str(role.unicode_emoji)):x}"))
         if role.icon:
             embed.set_thumbnail(url=role.icon.url)
         await ctx.reply(embed=embed)
 
     @commands.command(name="avatar", aliases=["av"])
-    async def avatar(self, ctx: Context, *, member: Optional[discord.Member] = None):
-        """Returns the avatar of the user"""
+    async def avatar(self, ctx: Context, *, member: Optional[discord.Member] = None) -> None:
+        """Returns the avatar of the user."""
         target = member or ctx.author
         embed = discord.Embed(
             title=f"{target}'s Avatar",
@@ -166,14 +165,13 @@ class Meta(Cog):
         await ctx.reply(embed=embed)
 
     @commands.command(aliases=["guildavatar", "serverlogo", "servericon"])
-    async def guildicon(self, ctx: Context):
-        """
-        Get the freaking server icon
-        """
+    async def guildicon(self, ctx: Context) -> None:
+        """Get the freaking server icon."""
         assert ctx.guild is not None
 
         if not ctx.guild.icon:
-            return await ctx.reply(f"{ctx.author.mention} {ctx.guild.name} has no icon yet!")
+            await ctx.reply(f"{ctx.author.mention} {ctx.guild.name} has no icon yet!")
+            return
 
         embed = discord.Embed(timestamp=discord.utils.utcnow())
         embed.set_image(url=ctx.guild.icon.url)
@@ -181,8 +179,8 @@ class Meta(Cog):
         await ctx.reply(embed=embed)
 
     @commands.command(name="serverinfo", aliases=["guildinfo", "si", "gi"])
-    async def server_info(self, ctx: Context):  # pylint: disable=too-many-locals, too-many-branches
-        """Get the basic stats about the server"""
+    async def server_info(self, ctx: Context) -> None:  # pylint: disable=too-many-locals, too-many-branches
+        """Get the basic stats about the server."""
         assert ctx.guild is not None
 
         embed: discord.Embed = discord.Embed(

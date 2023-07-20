@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -26,7 +25,7 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 import discord
 from discord.ext import commands
@@ -52,7 +51,7 @@ class Suggestions(Cog):
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-        self.message: Dict[int, dict] = {}
+        self.message: dict[int, dict] = {}
 
     async def __fetch_suggestion_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         if guild.id == self.bot.config.guild_id:
@@ -60,7 +59,7 @@ class Suggestions(Cog):
             return self.bot.get_channel(self.bot.config.suggestion_channel)  # type: ignore
 
     async def get_or_fetch_message(
-        self, msg_id: int, *, guild: discord.Guild, channel: discord.TextChannel | None = None
+        self, msg_id: int, *, guild: discord.Guild, channel: discord.TextChannel | None = None,
     ) -> Optional[discord.Message]:
         """Get or fetch a message from the cache or API."""
         if guild.id != self.bot.config.guild_id:
@@ -82,8 +81,8 @@ class Suggestions(Cog):
         return msg if (msg and (msg.author.id == self.bot.user.id)) else None
 
     async def __fetch_message_from_channel(
-        self, *, message: int, channel: discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None
-    ):
+        self, *, message: int, channel: discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None,
+    ) -> discord.Message | None:
         assert isinstance(channel, discord.TextChannel)
 
         async for msg in channel.history(
@@ -184,9 +183,8 @@ class Suggestions(Cog):
     @commands.group(aliases=["suggestion"], invoke_without_command=True)
     @commands.cooldown(1, 60, commands.BucketType.member)
     @commands.bot_has_permissions(embed_links=True, create_public_threads=True)
-    async def suggest(self, ctx: Context, *, suggestion: commands.clean_content):
-        """Suggest something. Abuse of the command may result in required mod actions"""
-
+    async def suggest(self, ctx: Context, *, suggestion: commands.clean_content) -> None:
+        """Suggest something. Abuse of the command may result in required mod actions."""
         if not ctx.invoked_subcommand:
             embed = (
                 discord.Embed(description=suggestion, timestamp=ctx.message.created_at, color=0xADD8E6)
@@ -213,9 +211,8 @@ class Suggestions(Cog):
     @suggest.command(name="set")
     @commands.cooldown(1, 60, commands.BucketType.member)
     @commands.has_permissions(manage_guild=True)
-    async def suggest_set_channel(self, ctx: Context, *, channel: discord.TextChannel):
-        """Set the suggestion channel"""
-
+    async def suggest_set_channel(self, ctx: Context, *, channel: discord.TextChannel) -> None:
+        """Set the suggestion channel."""
         self.bot.config.set_suggestion_channel(channel.id)
         await ctx.reply(f"{ctx.author.mention} Done", delete_after=5)
         await self.bot.config.update_to_db()
@@ -223,14 +220,14 @@ class Suggestions(Cog):
     @suggest.command(name="delete")
     @commands.cooldown(1, 60, commands.BucketType.member)
     @commands.bot_has_permissions(read_message_history=True)
-    async def suggest_delete(self, ctx: Context, *, ID: int):
-        """To delete the suggestion you suggested"""
-
+    async def suggest_delete(self, ctx: Context, *, ID: int) -> None:  # noqa: N803
+        """To delete the suggestion you suggested."""
         msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
-            return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
+            await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
             )
+            return
 
         if ctx.channel.permissions_for(ctx.author).manage_messages:
             await msg.delete(delay=0)
@@ -239,7 +236,8 @@ class Suggestions(Cog):
 
         try:
             if int(msg.embeds[0].footer.text.split(":")[1]) != ctx.author.id:  # type: ignore
-                return await ctx.reply(f"{ctx.author.mention} You don't own that 'suggestion'")
+                await ctx.reply(f"{ctx.author.mention} You don't own that 'suggestion'")
+                return
         except (IndexError, AttributeError, ValueError):
             pass
 
@@ -249,25 +247,29 @@ class Suggestions(Cog):
     @suggest.command(name="resolved")
     @commands.bot_has_guild_permissions(manage_threads=True)
     @commands.cooldown(1, 60, commands.BucketType.member)
-    async def suggest_resolved(self, ctx: Context, *, thread_id: int):
-        """To mark the suggestion as resolved"""
+    async def suggest_resolved(self, ctx: Context, *, thread_id: int) -> None:
+        """To mark the suggestion as resolved."""
         msg: Optional[discord.Message] = await self.get_or_fetch_message(thread_id, guild=ctx.guild)
         if not msg:
-            return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid"
+            await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid",
             )
+            return
 
         try:
             if int(msg.embeds[0].footer.text.split(":")[1]) != ctx.author.id:  # type: ignore
-                return await ctx.reply(f"{ctx.author.mention} You don't own that 'suggestion'")
+                await ctx.reply(f"{ctx.author.mention} You don't own that 'suggestion'")
+                return
         except (IndexError, AttributeError, ValueError):
             pass
 
         thread: discord.Thread = await self.bot.getch(ctx.guild.get_channel, ctx.guild.fetch_channel, thread_id)
         if not msg or not thread:
-            return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid"
+            await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid",
             )
+            return
+
         await thread.edit(
             archived=True,
             locked=True,
@@ -277,13 +279,14 @@ class Suggestions(Cog):
 
     @suggest.command(name="note", aliases=["remark"])
     @commands.check_any(commands.has_permissions(manage_messages=True))
-    async def add_note(self, ctx: Context, ID: int, *, remark: str):
-        """To add a note in suggestion embed"""
+    async def add_note(self, ctx: Context, ID: int, *, remark: str) -> None:  # noqa: N803
+        """To add a note in suggestion embed."""
         msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
-            return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
+            await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
             )
+            return
 
         embed: discord.Embed = msg.embeds[0]
         embed.clear_fields()
@@ -294,7 +297,8 @@ class Suggestions(Cog):
         try:
             user_id = int(embed.footer.text.split(":")[1])  # type: ignore
         except (IndexError, AttributeError, ValueError):
-            return await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
+            await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
+            return
 
         user = ctx.guild.get_member(user_id)
         await self.__notify_user(ctx, user, message=msg, remark=remark)
@@ -306,15 +310,15 @@ class Suggestions(Cog):
     async def clear_suggestion_embed(
         self,
         ctx: Context,
-        ID: int,
-    ):
-        """To remove all kind of notes and extra reaction from suggestion embed"""
-
+        ID: int,  # noqa: N803
+    ) -> None:
+        """To remove all kind of notes and extra reaction from suggestion embed."""
         msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
-            return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
+            await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
             )
+            return
 
         embed: discord.Embed = msg.embeds[0]
         embed.clear_fields()
@@ -329,7 +333,7 @@ class Suggestions(Cog):
 
     @suggest.command(name="flag")
     @commands.check_any(commands.has_permissions(manage_messages=True))
-    async def suggest_flag(self, ctx: Context, ID: int, flag: str):
+    async def suggest_flag(self, ctx: Context, ID: int, flag: str) -> None:  # noqa: N803
         """To flag the suggestion.
 
         Avalibale Flags :-
@@ -340,21 +344,23 @@ class Suggestions(Cog):
         - APPROVED
         - DUPLICATE
         """
-
         msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
-            return await ctx.reply(
-                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid"
+            await ctx.reply(
+                f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
             )
+            return
 
         if msg.author.id != self.bot.user.id:
-            return await ctx.reply(f"{ctx.author.mention} Invalid `{ID}`")
+            await ctx.reply(f"{ctx.author.mention} Invalid `{ID}`")
+            return
 
         flag = flag.upper()
         try:
-            payload: Dict[str, Union[int, str]] = OTHER_REACTION[flag]
+            payload: dict[str, Union[int, str]] = OTHER_REACTION[flag]
         except KeyError:
-            return await ctx.reply(f"{ctx.author.mention} Invalid Flag")
+            await ctx.reply(f"{ctx.author.mention} Invalid Flag")
+            return
 
         embed: discord.Embed = msg.embeds[0]
         if payload.get("color"):
@@ -363,7 +369,8 @@ class Suggestions(Cog):
         try:
             user_id = int(embed.footer.text.split(":")[1])  # type: ignore
         except (IndexError, AttributeError, ValueError):
-            return await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
+            await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
+            return
 
         user: Optional[discord.Member] = await self.bot.get_or_fetch_member(ctx.guild, user_id)
         await self.__notify_user(ctx, user, message=msg, remark="")
@@ -376,13 +383,13 @@ class Suggestions(Cog):
 
     @Cog.listener(name="on_raw_message_delete")
     async def suggest_msg_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
-        """Remove the message from cache"""
+        """Remove the message from cache."""
         if payload.message_id in self.message:
             del self.message[payload.message_id]
 
     @Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        """Parse the message and create suggestion"""
+        """Parse the message and create suggestion."""
         await self.bot.wait_until_ready()
         if message.author.bot or message.guild is None:
             return
@@ -402,13 +409,13 @@ class Suggestions(Cog):
 
     @Cog.listener()
     async def on_message_edit(self, _: discord.Message, after: discord.Message) -> None:
-        """Update the message in cache"""
+        """Update the message in cache."""
         if after.id in self.message:
             self.message[after.id]["message"] = after
 
     @Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        """Update the message in cache"""
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        """Update the message in cache."""
         if payload.message_id not in self.message:
             return
 
@@ -421,8 +428,8 @@ class Suggestions(Cog):
             self.message[payload.message_id]["message_downvote"] += 1
 
     @Cog.listener()
-    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
-        """Update the message in cache"""
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
+        """Update the message in cache."""
         if payload.message_id not in self.message:
             return
 

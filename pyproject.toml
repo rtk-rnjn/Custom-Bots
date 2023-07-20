@@ -3,6 +3,11 @@ line-length = 125
 
 [tool.ruff]
 line-length = 150
+select = ["E", "F", "B", "Q", "W", "C", "N", "D", "ANN", "UP", "ASYNC", "S", "COM"]
+ignore = ["ANN101", "ANN002", "ANN003", "ANN401", "ANN102", "D107", "D105", "D401", "UP007", "S101"]
+
+[tool.ruff.mccabe]
+max-complexity = 15
 
 [tool.flake8]
 max-line-length = 150

@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -14,7 +13,7 @@ The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+IMPLIED, INCLUDING BUT NOT LIMITED typing. THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
@@ -25,7 +24,7 @@ SOFTWARE.
 from __future__ import annotations
 
 import re
-import typing as T
+import typing
 from contextlib import suppress
 
 import discord
@@ -40,13 +39,14 @@ class EmbedSend(discord.ui.Button):
 
     view: EmbedBuilder
 
-    def __init__(self, channel: discord.TextChannel):
+    def __init__(self, channel: discord.TextChannel) -> None:
         self.channel = channel
         super().__init__(label=f"Send to #{channel.name}", style=discord.ButtonStyle.green)
 
-    async def callback(self, interaction: discord.Interaction) -> T.Any:
+    async def callback(self, interaction: discord.Interaction) -> typing.Any:
+        """Handle the interaction."""
         try:
-            m: T.Optional[discord.Message] = await self.channel.send(embed=self.view.embed)
+            m: typing.Optional[discord.Message] = await self.channel.send(embed=self.view.embed)
 
         except Exception as e:  # pylint: disable=broad-except
             await interaction.response.send_message(f"An error occured: {e}", ephemeral=True)
@@ -62,10 +62,11 @@ class EmbedSend(discord.ui.Button):
 class EmbedCancel(discord.ui.Button["EmbedBuilder"]):
     """A button that cancels the embed sending."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(label="Cancel", style=discord.ButtonStyle.red)
 
-    async def callback(self, interaction: discord.Interaction) -> T.Any:
+    async def callback(self, interaction: discord.Interaction) -> typing.Any:
+        """Handle the interaction."""
         assert self.view is not None
 
         await interaction.response.send_message("\N{CROSS MARK} | Embed sending cancelled.", ephemeral=True)
@@ -76,7 +77,7 @@ class BotColor:  # pylint: disable=too-few-public-methods
     """A color converter that converts a string to a discord.Color object."""
 
     @classmethod
-    async def convert(cls, ctx: Context, arg: str):
+    async def convert(cls, ctx: Context, arg: str) -> discord.Colour | discord.Message:
         """Convert the string to a discord.Color object."""
         match, check = None, False
         with suppress(AttributeError):
@@ -108,6 +109,7 @@ class Content(discord.ui.Modal, title="Edit Message Content"):
     )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:  # pylint: disable=arguments-differ
+        """Handle the interaction."""
         await interaction.response.defer()
 
 
@@ -117,12 +119,13 @@ class BotView(discord.ui.View):
     message: discord.Message
     custom_id = None
 
-    def __init__(self, ctx: Context, *, timeout: T.Optional[float] = 30):
+    def __init__(self, ctx: Context, *, timeout: typing.Optional[float] = 30) -> None:
         super().__init__(timeout=timeout)
         self.ctx = ctx
         self.bot = ctx.bot
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:  # pylint: disable=arguments-differ
+        """Check if the interaction is valid."""
         if interaction.user.id != self.ctx.author.id:
             await interaction.response.send_message(
                 "Sorry, you can't use this interaction as it is not started by you.",
@@ -132,6 +135,7 @@ class BotView(discord.ui.View):
         return True
 
     async def on_timeout(self) -> None:
+        """Disable all buttons and selects."""
         if hasattr(self, "message"):
             for b in self.children:
                 if isinstance(b, discord.ui.Button) and b.style != discord.ButtonStyle.link:
@@ -143,18 +147,20 @@ class BotView(discord.ui.View):
                 return
 
     async def on_error(  # pylint: disable=arguments-differ
-        self, interaction: discord.Interaction, error: Exception, item
+        self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item,
     ) -> None:
+        """Handle the error."""
         self.ctx.bot.dispatch("command_error", self.ctx, error)
 
 
 class BotInput(discord.ui.Modal):
     """A modal that takes input from the user."""
 
-    def __init__(self, title: str):
+    def __init__(self, title: str) -> None:
         super().__init__(title=title)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:  # pylint: disable=arguments-differ
+        """Handle the interaction."""
         with suppress(discord.NotFound):
             await interaction.response.defer()
 
@@ -164,7 +170,7 @@ class EmbedOptions(discord.ui.Select):
 
     view: EmbedBuilder
 
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx: Context) -> None:
         self.ctx = ctx
         super().__init__(
             placeholder="Select an option to design the message.",
@@ -197,7 +203,10 @@ class EmbedOptions(discord.ui.Select):
             ],
         )
 
-    async def callback(self, interaction: discord.Interaction):  # pylint: disable=too-many-branches, too-many-statements
+    async def callback(  # pylint: disable=too-many-branches, too-many-statements
+        self,
+        interaction: discord.Interaction,
+    ) -> None:
         """Handle the interaction."""
         assert self.view is not None
 
@@ -219,7 +228,7 @@ class EmbedOptions(discord.ui.Select):
                     required=False,
                     style=discord.TextStyle.short,
                     default=self.view.embed.title,
-                )
+                ),
             )
             modal.add_item(
                 discord.ui.TextInput(
@@ -229,7 +238,7 @@ class EmbedOptions(discord.ui.Select):
                     required=False,
                     style=discord.TextStyle.long,
                     default=self.view.embed.description,
-                )
+                ),
             )
             modal.add_item(
                 discord.ui.TextInput(
@@ -239,7 +248,7 @@ class EmbedOptions(discord.ui.Select):
                     max_length=2048,
                     required=False,
                     default=self.view.embed.footer.text,
-                )
+                ),
             )
             await interaction.response.send_modal(modal)
             await modal.wait()
@@ -264,7 +273,7 @@ class EmbedOptions(discord.ui.Select):
                     placeholder="Leave empty to remove Image.",
                     required=False,
                     default=getattr(self.view.embed.thumbnail, "url", None),
-                )
+                ),
             )
             await interaction.response.send_modal(modal)
             await modal.wait()
@@ -285,7 +294,7 @@ class EmbedOptions(discord.ui.Select):
                     placeholder="Leave empty to remove Image.",
                     required=False,
                     default=getattr(self.view.embed.image, "url", None),
-                )
+                ),
             )
             await interaction.response.send_modal(modal)
             await modal.wait()
@@ -307,7 +316,7 @@ class EmbedOptions(discord.ui.Select):
                     placeholder="Leave empty to remove Icon.",
                     required=False,
                     default=getattr(self.view.embed.footer, "icon_url", None),
-                )
+                ),
             )
             await interaction.response.send_modal(modal)
             await modal.wait()
@@ -329,7 +338,7 @@ class EmbedOptions(discord.ui.Select):
                     placeholder="Examples: red, yellow, #00ffb3, etc.",
                     required=False,
                     max_length=7,
-                )
+                ),
             )
             await interaction.response.send_modal(modal)
             await modal.wait()
@@ -348,7 +357,7 @@ class EmbedOptions(discord.ui.Select):
 class EmbedBuilder(BotView):
     """A view that builds an embed."""
 
-    def __init__(self, ctx: Context, **kwargs: T.Any):
+    def __init__(self, ctx: Context, **kwargs: typing.Any) -> None:
         super().__init__(ctx, timeout=100)
 
         self.ctx = ctx
@@ -358,11 +367,11 @@ class EmbedBuilder(BotView):
             self.add_item(_)
 
     @property
-    def formatted(self):
+    def formatted(self) -> dict:
         """Return the embed as a dict."""
-        return self.embed.to_dict()
+        return dict(self.embed.to_dict())
 
-    async def refresh_view(self, to_del: T.Optional[discord.Message] = None):
+    async def refresh_view(self, to_del: typing.Optional[discord.Message] = None) -> None:
         """Refresh the embed builder."""
         if to_del is not None:
             await to_del.delete(delay=0)
@@ -370,7 +379,7 @@ class EmbedBuilder(BotView):
         with suppress(discord.HTTPException):
             self.message = await self.message.edit(content=self.content, embed=self.embed, view=self)
 
-    async def rendor(self, **kwargs: T.Any):
+    async def rendor(self, **kwargs: typing.Any) -> None:
         """Rendor the embed builder."""
         self.message: discord.Message = await self.ctx.reply(
             kwargs.get("content", "\u200b"),
@@ -382,12 +391,12 @@ class EmbedBuilder(BotView):
         self.embed = self.message.embeds[0]  # pylint: disable=attribute-defined-outside-init
 
     @property
-    def help_embed(self):
+    def help_embed(self) -> discord.Embed:
         """Return the help embed."""
         return (
             discord.Embed(title="Title", description="Description")
             .set_thumbnail(
-                url="https://cdn.discordapp.com/attachments/853174868551532564/860464565338898472/embed_thumbnail.png"
+                url="https://cdn.discordapp.com/attachments/853174868551532564/860464565338898472/embed_thumbnail.png",
             )
             .set_image(url="https://cdn.discordapp.com/attachments/853174868551532564/860462053063393280/embed_image.png")
             .set_footer(

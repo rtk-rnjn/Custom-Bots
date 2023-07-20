@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -49,7 +48,7 @@ class OnMessage(Cog):
         """Start the task when the cog is loaded."""
         self.__update_messages.start()  # pylint: disable=no-member
 
-    async def cog_unload(self):
+    async def cog_unload(self) -> None:
         """Cancel the task when the cog is unloaded."""
         if self.__update_messages.is_running():  # pylint: disable=no-member
             self.__update_messages.cancel()  # pylint: disable=no-member

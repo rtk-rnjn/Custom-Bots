@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -53,24 +52,23 @@ __all__ = ("Config", "bots", "master_owner", "all_cogs", "ENV", "MONGO_CLIENT", 
 
 
 class Config:  # pylint: disable=too-many-instance-attributes
-    """Bot Config"""
+    """Bot Config."""
 
     def __init__(
         self,
-        **kwargs: str | int | bool | list[str],
+        **kwargs: str | int | bool | list[str] | None,
     ) -> None:
         # fmt: off
-        self._id: int         = kwargs.pop("id")        # type: ignore  # noqa
-        self._name: str       = kwargs.pop("name")      # type: ignore  # noqa
+        self._id: int         = kwargs.get("id")        # type: ignore  # noqa
+        self._name: str       = kwargs.get("name")      # type: ignore  # noqa
         self._token: str      = kwargs.get("token")     # type: ignore  # noqa
-        self._owner_id: int   = kwargs.pop("owner_id")  # type: ignore  # noqa
-        self._cogs: list[str] = kwargs.pop("cogs")      # type: ignore  # noqa
-        self._prefix: str     = kwargs.pop("prefix")    # type: ignore  # noqa
-        self._status: str     = kwargs.pop("status")    # type: ignore  # noqa
-        self._activity: str   = kwargs.pop("activity")  # type: ignore  # noqa
-        self._media: str      = kwargs.pop("media")     # type: ignore  # noqa
-        self._guild_id: int   = kwargs.pop("guild_id")  # type: ignore  # noqa
-        self._suggestion_channel: int | None = kwargs.pop("suggestion_channel", None)  # type: ignore
+        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore  # noqa
+        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore  # noqa
+        self._prefix: str     = kwargs.get("prefix")    # type: ignore  # noqa
+        self._status: str     = kwargs.get("status")    # type: ignore  # noqa
+        self._activity: str   = kwargs.get("activity")  # type: ignore  # noqa
+        self._media: str      = kwargs.get("media")     # type: ignore  # noqa
+        self._guild_id: int   = kwargs.get("guild_id")  # type: ignore  # noqa
         # fmt: on
 
         self.__kw = kwargs
@@ -103,61 +101,61 @@ class Config:  # pylint: disable=too-many-instance-attributes
 
     @property
     def id(self) -> int:
-        """Bot ID"""
+        """Bot ID."""
         return self._id
 
     @property
     def name(self) -> str:
-        """Bot Name"""
+        """Bot Name."""
         return self._name
 
     @property
     def token(self) -> str:
-        """Bot Token"""
+        """Bot Token."""
         return self._token
 
     @property
     def owner_id(self) -> int:
-        """Bot Owner ID"""
+        """Bot Owner ID."""
         return self._owner_id
 
     @property
     def owner_ids(self) -> set[int]:
-        """Bot Owner IDs"""
+        """Bot Owner IDs."""
         return {self.owner_id, master_owner}
 
     @property
     def cogs(self) -> list[str]:
-        """Bot Cogs"""
+        """Bot Cogs."""
         return self._cogs
 
     @property
     def prefix(self) -> str:
-        """Bot Prefix"""
+        """Bot Prefix."""
         return self._prefix
 
     @property
     def status(self) -> discord.Status:
-        """Bot Status"""
+        """Bot Status."""
         return getattr(discord.Status, self._status)
 
     @property
     def activity(self) -> discord.Activity:
-        """Bot Activity"""
+        """Bot Activity."""
         return discord.Activity(type=getattr(discord.ActivityType, self._activity), name=self._media)
 
     @property
     def guild_id(self) -> int:
-        """Bot Guild ID"""
+        """Bot Guild ID."""
         return self._guild_id
 
     @property
     def suggestion_channel(self) -> int:
-        """Bot Suggestion Channel ID"""
+        """Bot Suggestion Channel ID."""
         return self._suggestion_channel or 0
 
     def set_prefix(self, prefix: str) -> None:
-        """Set Bot Prefix
+        """Set Bot Prefix.
 
         Parameters
         ----------
@@ -167,16 +165,27 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self._prefix = prefix
         self.__kw["prefix"] = prefix
 
-    def set_suggestion_channel(self, channel_id: int) -> None:
-        """Set Bot Suggestion Channel ID
+    def set_suggestion_channel(self, channel_id: int | None) -> None:
+        """Set Bot Suggestion Channel ID.
 
         Parameters
         ----------
         channel_id: int
             The new channel ID
         """
-        self._suggestion_channel = channel_id
+        self._suggestion_channel = channel_id  # pylint: disable=attribute-defined-outside-init
         self.__kw["suggestion_channel"] = channel_id
+
+    def set_modlog_channel(self, channel_id: int | None) -> None:
+        """Set Bot Mod Log Channel ID.
+
+        Parameters
+        ----------
+        channel_id: int
+            The new channel ID
+        """
+        self._modlog_channel = channel_id  # pylint: disable=attribute-defined-outside-init
+        self["modlog_channel"] = channel_id
 
     def __getattr__(self, __name: str) -> Any:
         return self.__kw.get(__name, None)
@@ -191,7 +200,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
         del self.__kw[__name]
 
     async def update_to_db(self) -> None:
-        """Update the bot config to the database"""
+        """Update the bot config to the database."""
         from .converters import ToAsync  # pylint: disable=import-outside-toplevel
 
         @ToAsync()
@@ -213,7 +222,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
 
 
 class Null:
-    """Null Object"""
+    """Null Object."""
 
     def __repr__(self) -> str:
         return "Null()"
@@ -238,9 +247,9 @@ ANY = Null | str | list | bool | dict | int | None
 
 
 class Environment:
-    """Environment Variables"""
+    """Environment Variables."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__dict = os.environ
 
     def __getattr__(self, name: str) -> ANY:
@@ -248,8 +257,7 @@ class Environment:
 
     @staticmethod
     def parse_entity(entity: Any, *, return_null: bool = True) -> ANY:
-        """Parse an entity to a python object"""
-
+        """Parse an entity to a python object."""
         if entity is None:
             return Null() if return_null else None
 
@@ -280,14 +288,14 @@ class Environment:
 ENV = Environment()
 
 if not ENV.MONGO_URI:
-    raise EnvironmentError("MONGO_URI not found in .env or environment variables")
+    raise OSError("MONGO_URI not found in .env or environment variables")
 
 MONGO_CLIENT = MongoClient(str(ENV.MONGO_URI))
 log.info("connected to mongodb")
 
 
 def load_config(bot_id: int | None = None) -> list[Config]:
-    """Load the bot configs from the database"""
+    """Load the bot configs from the database."""
     collection = MONGO_CLIENT["customBots"]["mainConfigCollection"]
 
     if not bot_id:

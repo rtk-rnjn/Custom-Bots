@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -47,6 +46,7 @@ class Context(commands.Context[commands.Bot]):
         self.config = self.bot.main_db.mainConfigCollection
 
     async def send(self, *args, **kwargs) -> discord.Message:
+        """Send a message to the channel. If fails, then send in DMs."""
         # check if the bot has permission to send messages
 
         permission = self.channel.permissions_for(self.me)  # type: ignore
@@ -60,14 +60,15 @@ class Context(commands.Context[commands.Bot]):
             try:
                 return await self.author.send(
                     f"Hey! I don't have permission to send messages in {self.channel.mention}.\n"
-                    "> Please grant me the required permissions and try again."
+                    "> Please grant me the required permissions and try again.",
                 )
             except discord.Forbidden:
                 pass
 
         return await super().send(*args, **kwargs)
 
-    async def reply(self, *args, **kwargs):
+    async def reply(self, *args, **kwargs) -> discord.Message:
+        """Reply to the message. If fails, then send normally."""
         try:
             return await self.send(*args, **kwargs, reference=kwargs.pop("reference", self.message), mention_author=False)
         except discord.HTTPException:

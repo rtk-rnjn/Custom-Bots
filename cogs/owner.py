@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -56,10 +55,11 @@ class Owner(Cog):
         status: Optional[Literal["online", "dnd", "idle"]] = "dnd",
         *,
         media: str,
-    ):
-        """Update bot presence accordingly to invoke command
+    ) -> None:
+        """Update bot presence accordingly to invoke command.
 
-        Examples:
+        Examples
+        --------
         `- [p]playing online Hello World!`
         `- [p]listening dnd Hello World!`
 
@@ -75,13 +75,15 @@ class Owner(Cog):
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @commands.command()
-    async def prefix(self, ctx: Context, *, prefix: str):
+    async def prefix(self, ctx: Context, *, prefix: str) -> None:
         """Change bot prefix.
 
         Example:
+        -------
         `[p]prefix !`
 
         Note:
+        ----
         - You must be owner of the bot to use this command.
         - The prefix can be any string.
         - Prefix will be case insensitive.
@@ -90,7 +92,7 @@ class Owner(Cog):
         log.info("prefix changed to %s", prefix)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
         await self.bot.mongo.customBots.mainConfigCollection.update_one(
-            {"id": self.bot.config.id}, {"$set": {"prefix": prefix}}
+            {"id": self.bot.config.id}, {"$set": {"prefix": prefix}},
         )
 
 

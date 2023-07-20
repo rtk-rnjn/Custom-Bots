@@ -1,15 +1,16 @@
 {
     "master_owner": 741614468546560092,
     "all_cogs": [
-        "cogs.meta",
-        "cogs.mod",
-        "cogs.misc",
-        "cogs.owner",
-        "cogs.giveaway",
+        "cogs.autoresponder",
+        "cogs.config",
         "cogs.custom_events",
-        "cogs.ticket",
         "cogs.events",
+        "cogs.giveaway",
+        "cogs.meta",
+        "cogs.misc",
+        "cogs.mod",
+        "cogs.owner",
         "cogs.suggestion",
-        "cogs.autoresponder"
+        "cogs.ticket"
     ]
 }

@@ -1,5 +1,4 @@
-"""
-MIT License
+"""MIT License.
 
 Copyright (c) 2023 Ritik Ranjan
 
@@ -39,9 +38,6 @@ from .cog_utils import EmbedBuilder, EmbedCancel, EmbedSend
 log = logging.getLogger("misc")
 
 
-PERMANENT_INVITE = "https://discord.gg/Zk4H4K9Z4e"
-
-
 class Misc(Cog):
     """Miscellaneous commands."""
 
@@ -56,11 +52,13 @@ class Misc(Cog):
         channel: Optional[discord.TextChannel] = None,
         *,
         data: Optional[str] = None,
-    ):
+    ) -> None:
         """A nice command to make custom embeds.
 
         Embed can also be created from JSON object.
+
         Example:
+        -------
         `[p]embed {"title": "Hello", "description": "World!"}`
         """
         channel = channel or ctx.channel  # type: ignore
@@ -75,11 +73,11 @@ class Misc(Cog):
                 await ctx.reply(f"{ctx.author.mention} you didn't provide the proper json object. Error raised: {e}")
         else:
             await ctx.reply(
-                f"{ctx.author.mention} you don't have Embed Links permission in {channel.mention}"  # type: ignore
+                f"{ctx.author.mention} you don't have Embed Links permission in {channel.mention}",  # type: ignore
             )
 
     @commands.command(name="invite")
-    async def invite_command(self, ctx: Context):
+    async def invite_command(self, ctx: Context) -> None:
         """Invite the bot to your server."""
         assert self.bot.user
 
@@ -91,18 +89,19 @@ class Misc(Cog):
                 title="This bot is not intended to be used in multiple servers.",
                 description=(
                     "You can still add the bot on your server, but it won't work.\n"
-                    f"> - Bot is made to work in **[{main_guild.name}]({PERMANENT_INVITE})** (ID: `{main_guild.id}`)\n"
+                    f"> - Bot is made to work in **[{main_guild.name}]({self.bot.config.permanent_invite})** (ID: `{main_guild.id}`)\n"
                     f"> - If you want to use the bot in your server, please consider asking **[{owner.mention} - `{owner}`]** (`{owner.id}`)\n"
                 ),
                 url=discord.utils.oauth_url(self.bot.user.id, permissions=discord.Permissions(0)),
             )
             .set_thumbnail(url=self.bot.user.display_avatar.url)
-            .set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+            .set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url),
         )
 
     @commands.command()
-    async def cleanup(self, ctx: Context, search: int = 100):
+    async def cleanup(self, ctx: Context, search: int = 100) -> None:
         """Cleans up the bot's messages from the channel.
+
         If a search number is specified, it searches that many messages to delete.
 
         If the bot has Manage Messages permissions then it will try to delete
@@ -135,7 +134,7 @@ class Misc(Cog):
 
         await ctx.reply("\n".join(messages), delete_after=10)
 
-    async def _basic_cleanup_strategy(self, ctx: Context, search: int):
+    async def _basic_cleanup_strategy(self, ctx: Context, search: int) -> dict[str, int]:
         count = 0
         async for msg in ctx.history(limit=search, before=ctx.message):
             if msg.author == ctx.me and not msg.mentions and not msg.role_mentions:
@@ -143,29 +142,29 @@ class Misc(Cog):
                 count += 1
         return {"Bot": count}
 
-    async def _complex_cleanup_strategy(self, ctx: Context, search: int):
+    async def _complex_cleanup_strategy(self, ctx: Context, search: int) -> dict[str, int]:
         assert ctx.guild is not None and isinstance(ctx.channel, discord.TextChannel)
         prefixes = tuple(self.bot.config.prefix)  # thanks startswith
 
-        def check(m: discord.Message):
+        def check(m: discord.Message) -> bool:
             return m.author == ctx.me or m.content.startswith(prefixes)
 
         deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
         return Counter(m.author.display_name for m in deleted)
 
-    async def _regular_user_cleanup_strategy(self, ctx: Context, search: int):
+    async def _regular_user_cleanup_strategy(self, ctx: Context, search: int) -> dict[str, int]:
         assert ctx.guild is not None and isinstance(ctx.channel, discord.TextChannel)
 
         prefixes = tuple(self.bot.config.prefix)
 
-        def check(m: discord.Message):
+        def check(m: discord.Message) -> bool:
             return (m.author == ctx.me or m.content.startswith(prefixes)) and not m.mentions and not m.role_mentions
 
         deleted = await ctx.channel.purge(limit=search, check=check, before=ctx.message)
         return Counter(m.author.display_name for m in deleted)
 
     @Cog.listener()
-    async def on_message_delete(self, message: discord.Message):
+    async def on_message_delete(self, message: discord.Message) -> None:
         """Cache deleted messages."""
         if message.author.bot:
             return
@@ -174,7 +173,7 @@ class Misc(Cog):
         log.debug("message deleted and cached in %s", message.channel.id)
 
     @Cog.listener()
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
         """Cache edited messages."""
         if before.author.bot:
             return
@@ -183,7 +182,7 @@ class Misc(Cog):
         log.debug("message edited and cached in %s", before.channel.id)
 
     @commands.command()
-    async def snipe(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None):  # type: ignore
+    async def snipe(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:  # type: ignore
         """Snipe a deleted message.
 
         Shows the last deleted message in the channel.
@@ -193,15 +192,16 @@ class Misc(Cog):
         - `[p]snipe` - Shows the last deleted message in the channel.
         - `[p]snipe #general` - Shows the last deleted message in #general.
         """
-
         channel = channel or ctx.channel  # type: discord.abc.GuildChannel  # type: ignore
 
         perms = channel.permissions_for(ctx.author)
         if not perms.read_messages and not perms.read_message_history:
-            return await ctx.reply(f"{ctx.author.mention} you don't have permission to read messages in {channel.mention}")
+            await ctx.reply(f"{ctx.author.mention} you don't have permission to read messages in {channel.mention}")
+            return
 
         if channel.id not in self.__cached_messages:
-            return await ctx.reply(f"{ctx.author.mention} there are no deleted messages in {channel.mention}")
+            await ctx.reply(f"{ctx.author.mention} there are no deleted messages in {channel.mention}")
+            return
 
         message = self.__cached_messages.pop(channel.id)
         log.debug("message sniped in %s", channel.id)
@@ -209,7 +209,8 @@ class Misc(Cog):
         if isinstance(message, list):
             before, after = message
             if before.content == after.content:
-                return await ctx.reply(f"{ctx.author.mention} there are no deleted messages in {channel.mention}")
+                await ctx.reply(f"{ctx.author.mention} there are no deleted messages in {channel.mention}")
+                return
 
             embed = (
                 discord.Embed(
@@ -221,7 +222,8 @@ class Misc(Cog):
                 .set_footer(text=f"Author ID: {before.author.id}")
             )
 
-            return await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed)
+            return
 
         embed = (
             discord.Embed(
