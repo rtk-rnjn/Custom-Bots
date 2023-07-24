@@ -240,7 +240,7 @@ class Misc(Cog):
     @commands.group(name="announce", aliases=["announcements", "announcement"], invoke_without_command=True)
     @commands.has_permissions(manage_messages=True)
     async def announce_group(
-        self, ctx: Context, channel: Optional[discord.TextChannel] = None, *, msg: Optional[str] = None
+        self, ctx: Context, channel: Optional[discord.TextChannel] = None, *, msg: Optional[str] = None,
     ) -> None:
         """Send an announcement to the announcements channel."""
         if ctx.invoked_subcommand is None:
