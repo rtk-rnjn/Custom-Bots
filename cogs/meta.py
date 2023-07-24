@@ -315,9 +315,9 @@ class Meta(Cog):
         embed = discord.Embed(
             title=f"Member Count: {ctx.guild.name}",
             description=(
-                f"Total Members: {len(ctx.guild.members)}\n"
-                f"Humans: {len(list(filter(lambda m: not m.bot, ctx.guild.members)))}\n"
-                f"Bots: {len(list(filter(lambda m: m.bot, ctx.guild.members)))}"
+                f"`Total :` **{len(ctx.guild.members)}**\n"
+                f"`Humans:` **{len(list(filter(lambda m: not m.bot, ctx.guild.members)))}**\n"
+                f"`Bots  :` **{len(list(filter(lambda m: m.bot, ctx.guild.members)))}**"
             ),
             color=ctx.author.color,
             timestamp=discord.utils.utcnow(),
