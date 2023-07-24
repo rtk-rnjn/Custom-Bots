@@ -30,15 +30,14 @@ import logging.handlers
 import os
 import re
 from collections import Counter
-from typing import Any
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 import aiohttp
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 import pymongo
-from discord.ext import commands
-from discord.message import Message
+from discord.ext import commands, tasks
 from pymongo.errors import ConnectionFailure
 from pymongo.results import DeleteResult, InsertOneResult
 
@@ -83,7 +82,9 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         self.cogs_to_load = config.cogs
 
         self.spam_control: commands.CooldownMapping = commands.CooldownMapping.from_cooldown(
-            3, 5, commands.BucketType.user,
+            3,
+            5,
+            commands.BucketType.user,
         )
         self._auto_spam_count: Counter[int] = Counter()
         self._BotBase__cogs = (
@@ -97,10 +98,11 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         self._have_data: asyncio.Event = asyncio.Event()
         self.reminder_event: asyncio.Event = asyncio.Event()
 
-        self.message_cache: dict[int, Message] = {}
+        self.message_cache: dict[int, discord.Message] = {}
         self.before_invoke(self.__before_invoke)
 
         self.__config = config
+        self.__universal_db_writer = []
 
     @property
     def config(self) -> Config:
@@ -137,6 +139,20 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
                 logger.warning("extension %s is already loaded. Skipping.", cog)
             else:
                 logger.info("extension %s loaded", cog)
+
+        self.update_to_db.start()  # pylint: disable=no-member
+
+    async def close(self) -> None:
+        """Close the bot."""
+        if self.timer_task:
+            self.timer_task.cancel()
+
+        if self.update_to_db.is_running():  # pylint: disable=no-member
+            self.update_to_db.cancel()  # pylint: disable=no-member
+
+        await self.session.close()
+
+        await super().close()
 
     async def on_ready(self) -> None:
         """Bot startup, sets uptime."""
@@ -187,7 +203,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         members = await guild.query_members(limit=1, user_ids=[member_id], cache=True)
         return members[0] if members else None
 
-    async def getch(self, get_function: Callable, fetch_function: Callable[..., Awaitable], entity: Any) -> Any:
+    async def getch(self, get_function: Callable, fetch_function: Callable[..., Awaitable], entity: int) -> Any:  # noqa: ANN401
         """Get an entity from cache or fetch if not found."""
         entity = get_function(entity)
         if entity is not None:
@@ -200,7 +216,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
         return None
 
-    async def process_commands(self, message: Message) -> None:  # pylint: disable=arguments-differ
+    async def process_commands(self, message: discord.Message) -> None:  # pylint: disable=arguments-differ
         """Process commands and send errors if any."""
         ctx: Context = await self.get_context(message, cls=Context)
 
@@ -216,7 +232,9 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         await self.invoke(ctx)
 
     async def on_command_error(  # pylint: disable=arguments-differ, disable=too-many-return-statements
-        self, ctx: Context, error: commands.CommandError,
+        self,
+        ctx: Context,
+        error: commands.CommandError,
     ) -> discord.Message | None:
         """Handle command errors."""
         await self.wait_until_ready()
@@ -272,11 +290,11 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
         raise error
 
-    async def get_active_timer(self, **filters: Any) -> dict:
+    async def get_active_timer(self, **filters: dict) -> dict:
         """Get the active timer."""
         return await self.timers.find_one(filters, sort=[("expires_at", pymongo.ASCENDING)])
 
-    async def wait_for_active_timers(self, **filters: Any) -> dict:
+    async def wait_for_active_timers(self, **filters: dict) -> dict:
         """Wait for the active timer."""
         timers = await self.get_active_timer(**filters)
         logger.info("received timers: %s", timers)
@@ -319,7 +337,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             logger.info("Timer dispatch cancelled")
             raise
 
-    async def call_timer(self, collection, **data: Any) -> None:  # noqa: ANN001
+    async def call_timer(self, collection, **data: dict | float) -> None:  # noqa: ANN001
         """Call the timer and delete it."""
         deleted: DeleteResult = await collection.delete_one({"_id": data["_id"]})
 
@@ -331,7 +349,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         else:
             self.dispatch("timer_complete", **data)
 
-    async def short_time_dispatcher(self, collection, **data: Any) -> None:  # noqa: ANN001
+    async def short_time_dispatcher(self, collection, **data: float) -> None:  # noqa: ANN001
         """Sleep and call the timer."""
         await asyncio.sleep(discord.utils.utcnow().timestamp() - data["expires_at"])
 
@@ -395,7 +413,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
         return insert_data
 
-    async def delete_timer(self, **kw: Any) -> DeleteResult:
+    async def delete_timer(self, **kw: dict) -> DeleteResult:
         """Delete a timer."""
         collection = self.timers
         data = await collection.delete_one({"_id": kw["_id"]})
@@ -454,7 +472,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             msg = "This command is disabled in this guild."
             raise commands.DisabledCommand(msg)
 
-    async def get_prefix(self, message: Message) -> list[str]:  # pylint: disable=arguments-differ
+    async def get_prefix(self, message: discord.Message) -> list[str]:  # pylint: disable=arguments-differ
         """Get the prefix for the guild."""
         prefix = self.__config.prefix
         comp = re.compile(f"^({re.escape(prefix)}).*", flags=re.I)
@@ -463,3 +481,21 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             prefix = match[1]
 
         return commands.when_mentioned_or(prefix)(self, message)
+
+    def add_to_db_writer(self, *, collection: str, entity: pymongo.UpdateOne | pymongo.UpdateMany) -> None:
+        """Add an entity to the database writer."""
+        self.__universal_db_writer.append((collection, entity))
+
+    @tasks.loop(hours=1)
+    async def update_to_db(self) -> None:
+        """Update the database."""
+        async with self.lock:
+            group: dict[str, list[pymongo.UpdateOne | pymongo.UpdateMany]] = {}
+            for collection, entity in self.__universal_db_writer:
+                group.setdefault(collection, []).append(entity)
+
+            for collection, entities in group.items():
+                col = self.sync_mongo["customBots"][collection]
+                await asyncio.to_thread(col.bulk_write, entities, ordered=False)
+
+            self.__universal_db_writer = []

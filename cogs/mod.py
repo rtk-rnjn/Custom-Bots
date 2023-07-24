@@ -28,8 +28,8 @@ import datetime
 import logging
 import re
 import shlex
-from typing import Annotated, Any, Optional, Union
 from collections.abc import Callable
+from typing import Annotated, Any, Optional, Union
 
 import discord
 from discord.ext import commands
@@ -62,7 +62,11 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         self.bot = bot
 
     async def mod_log(
-        self, *, ctx: Context, message: str | None = None, target: discord.Member | discord.User | discord.abc.GuildChannel,
+        self,
+        *,
+        ctx: Context,
+        message: str | None = None,
+        target: discord.Member | discord.User | discord.abc.GuildChannel,
     ) -> None:
         """Factory method to send a mod log message."""
         embed = (
@@ -148,7 +152,10 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         return True
 
     async def unlock_channel_method(
-        self, *, channel: discord.TextChannel | discord.VoiceChannel, reason: str | None,
+        self,
+        *,
+        channel: discord.TextChannel | discord.VoiceChannel,
+        reason: str | None,
     ) -> bool:
         """Unlock a text channel or voice channel."""
         try:
@@ -729,7 +736,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         args.search = max(0, min(2000, args.search))  # clamp from 0-2000
         await self.purge_method(ctx, args.search, predicate, before=args.before, after=args.after)
 
-    @commands.command(name="timeout", aliases=["mute"])
+    @commands.command(name="timeout", aliases=["mute", "stfu"])
     @commands.has_permissions(manage_messages=True, moderate_members=True)
     @commands.bot_has_guild_permissions(moderate_members=True)
     async def timeout(
@@ -750,11 +757,17 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
 
         For example, `1h` would be 1 hour, `5m` would be 5 minutes, `2d` would be 2 days.
 
+        Note: The duration cannot be more than 28 days.
+
         Examples
         --------
         - `[p]timeout @user 1h`
             - This will time out @user for 1 hour.
         """
+        if duration.dt > discord.utils.utcnow() + datetime.timedelta(days=28):
+            msg = "Timeout duration cannot be more than 28 days. Consider banning instead."
+            raise commands.BadArgument(msg)
+
         if await self.timeout_method(user=user, duration=duration.dt, reason=reason, guild=ctx.guild):
             await ctx.reply(
                 f"Successfully timed out {user}. Timeout will remove **{discord.utils.format_dt(duration.dt, 'R')}**.",

@@ -23,11 +23,9 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
 import discord
-from discord.ext import tasks
 from pymongo import UpdateOne
 
 from core import Bot, Cog  # pylint: disable=import-error
@@ -40,18 +38,6 @@ class OnMessage(Cog):
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-        self.__messages_sent = []
-        self.collection = bot.mongo.customBots.messageCollection  # type: ignore
-        self.lock = asyncio.Lock()
-
-    async def cog_load(self) -> None:
-        """Start the task when the cog is loaded."""
-        self.__update_messages.start()  # pylint: disable=no-member
-
-    async def cog_unload(self) -> None:
-        """Cancel the task when the cog is unloaded."""
-        if self.__update_messages.is_running():  # pylint: disable=no-member
-            self.__update_messages.cancel()  # pylint: disable=no-member
 
     @Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -89,7 +75,7 @@ class OnMessage(Cog):
             upsert=True,
         )
 
-        self.__messages_sent.append(data)
+        self.bot.add_to_db_writer(collection="messageCollection", entity=data)
 
     @Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
@@ -112,7 +98,7 @@ class OnMessage(Cog):
             },
         )
 
-        self.__messages_sent.append(data)
+        self.bot.add_to_db_writer(collection="messageCollection", entity=data)
 
     @Cog.listener()
     async def on_message_delete(self, message: discord.Message) -> None:
@@ -132,15 +118,4 @@ class OnMessage(Cog):
             },
         )
 
-        self.__messages_sent.append(data)
-
-    @tasks.loop(minutes=1)
-    async def __update_messages(self) -> None:
-        """Update the messages sent by the bot."""
-        async with self.lock:
-            if self.__messages_sent:
-                lst = self.__messages_sent.copy()
-                log.debug("writing total of %s messages", len(lst))
-                await self.collection.bulk_write(lst)
-                log.debug("wrote total of %s messages", len(lst))
-                self.__messages_sent = []
+        self.bot.add_to_db_writer(collection="messageCollection", entity=data)

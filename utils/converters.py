@@ -24,10 +24,10 @@ SOFTWARE.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
 from typing import TYPE_CHECKING, Any
-from collections.abc import Callable
 
 import discord
 from discord.ext import commands
@@ -250,7 +250,7 @@ class ToAsync:  # pylint: disable=too-few-public-methods
 
     def __call__(self, blocking: Callable[..., Any]) -> Callable[..., Any]:  # noqa: D102
         @wraps(blocking)
-        async def wrapper(*args, **kwargs) -> Any:
+        async def wrapper(*args, **kwargs) -> Any:  # noqa: ANN401
             return await asyncio.get_event_loop().run_in_executor(self.executor, partial(blocking, *args, **kwargs))
 
         return wrapper

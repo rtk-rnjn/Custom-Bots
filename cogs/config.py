@@ -50,7 +50,8 @@ class Config(Cog):  # pylint: disable=too-few-public-methods
         self.bot.config.set_prefix(prefix)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
         await self.bot.mongo.customBots.mainConfigCollection.update_one(
-            {"id": self.bot.config.id}, {"$set": {"prefix": prefix}},
+            {"id": self.bot.config.id},
+            {"$set": {"prefix": prefix}},
         )
 
     @_set.command(name="suggestion", aliases=["suggest"])

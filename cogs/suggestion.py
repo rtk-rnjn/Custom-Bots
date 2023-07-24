@@ -59,7 +59,11 @@ class Suggestions(Cog):
             return self.bot.get_channel(self.bot.config.suggestion_channel)  # type: ignore
 
     async def get_or_fetch_message(
-        self, msg_id: int, *, guild: discord.Guild, channel: discord.TextChannel | None = None,
+        self,
+        msg_id: int,
+        *,
+        guild: discord.Guild,
+        channel: discord.TextChannel | None = None,
     ) -> Optional[discord.Message]:
         """Get or fetch a message from the cache or API."""
         if guild.id != self.bot.config.guild_id:
@@ -82,7 +86,10 @@ class Suggestions(Cog):
         return msg if (msg and (msg.author.id == self.bot.user.id)) else None
 
     async def __fetch_message_from_channel(
-        self, *, message: int, channel: discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None,
+        self,
+        *,
+        message: int,
+        channel: discord.abc.GuildChannel | discord.Thread | discord.abc.PrivateChannel | None,
     ) -> discord.Message | None:
         assert isinstance(channel, discord.TextChannel)
 

@@ -23,6 +23,7 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from collections import Counter
@@ -33,7 +34,7 @@ from discord.ext import commands
 
 from core import Bot, Cog, Context  # pylint: disable=import-error
 
-from .cog_utils import EmbedBuilder, EmbedCancel, EmbedSend
+from .cog_utils import AnnouncementView, EmbedBuilder, EmbedCancel, EmbedSend
 
 log = logging.getLogger("misc")
 
@@ -235,6 +236,56 @@ class Misc(Cog):
             .set_footer(text=f"Author ID: {message.author.id}")
         )
         await ctx.reply(embed=embed)
+
+    @commands.group(name="announce", aliases=["announcements", "announcement"], invoke_without_command=True)
+    @commands.has_permissions(manage_messages=True)
+    async def announce_group(
+        self, ctx: Context, channel: Optional[discord.TextChannel] = None, *, msg: Optional[str] = None
+    ) -> None:
+        """Send an announcement to the announcements channel."""
+        if ctx.invoked_subcommand is None:
+            if not msg:
+                try:
+                    message: discord.Message = await self.bot.wait_for(
+                        "message",
+                        check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+                        timeout=120,
+                    )
+                except asyncio.TimeoutError:
+                    await ctx.reply(f"{ctx.author.mention} you took too long to respond.")
+                    return
+                msg = message.content
+
+            view = AnnouncementView(
+                ctx=ctx,
+                content=msg,
+                current_channel=channel.id if channel else ctx.channel.id,
+                in_embed=False,
+            )
+            view.message = await ctx.send(embed=discord.Embed(description=msg), view=view)
+
+    @announce_group.command(name="embed")
+    @commands.has_permissions(manage_messages=True)
+    async def announce_embed_command(self, ctx: Context, channel: Optional[discord.TextChannel] = None, *, msg: str) -> None:
+        """Send an announcement to the announcements channel."""
+        view = AnnouncementView(
+            ctx=ctx,
+            content=msg,
+            current_channel=channel.id if channel else ctx.channel.id,
+            in_embed=True,
+        )
+        view.message = await ctx.send(embed=discord.Embed(description=msg), view=view)
+
+    @announce_group.command(name="quick", aliases=["q"])
+    @commands.has_permissions(manage_messages=True)
+    async def announce_quick_command(self, ctx: Context, *, msg: str) -> None:
+        """Send an announcement to the announcements channel."""
+        await ctx.message.delete(delay=0)
+        pinnged = ("@everyone" in msg) or ("@here" in msg)
+        if not pinnged:
+            msg = f"@everyone\n{msg}\n\nRegards,\n{ctx.author.mention} ({ctx.author})"
+
+        await ctx.send(msg)
 
 
 async def setup(bot: Bot) -> None:

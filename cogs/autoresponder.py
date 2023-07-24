@@ -187,7 +187,8 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
         """
         if trigger in self._ar_message_cache:
             await ctx.reply(
-                f"There is already an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+                f"There is already an autoresponder for `{trigger}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -211,7 +212,8 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             log.debug("Removed autoresponder for %s", trigger)
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+                f"Couldn't find an autoresponder for `{trigger}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -250,7 +252,8 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             response = self._ar_message_cache[trigger]
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+                f"Couldn't find an autoresponder for `{trigger}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
@@ -327,7 +330,8 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
         self._ar_reaction_cache[trigger] = str(reaction)
         log.debug("added a new autoresponder reaction for %s", trigger)
         await ctx.reply(
-            f"Added a new autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+            f"Added a new autoresponder reaction for `{trigger}`.",
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
         self.__need_save = True
@@ -346,12 +350,14 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             log.debug("removed an autoresponder reaction for %s", trigger)
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+                f"Couldn't find an autoresponder reaction for `{trigger}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 
         await ctx.reply(
-            f"Removed the autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+            f"Removed the autoresponder reaction for `{trigger}`.",
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
         self.__need_save = True
@@ -387,7 +393,8 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             response = self._ar_reaction_cache[trigger]
         except KeyError:
             await ctx.reply(
-                f"Couldn't find an autoresponder reaction for `{trigger}`.", allowed_mentions=discord.AllowedMentions.none(),
+                f"Couldn't find an autoresponder reaction for `{trigger}`.",
+                allowed_mentions=discord.AllowedMentions.none(),
             )
             return
 

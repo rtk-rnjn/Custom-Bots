@@ -25,8 +25,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
 from collections.abc import Callable
+from typing import Optional
 
 import discord
 from discord.ext import commands, tasks

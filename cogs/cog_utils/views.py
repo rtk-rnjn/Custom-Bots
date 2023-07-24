@@ -43,7 +43,7 @@ class EmbedSend(discord.ui.Button):
         self.channel = channel
         super().__init__(label=f"Send to #{channel.name}", style=discord.ButtonStyle.green)
 
-    async def callback(self, interaction: discord.Interaction) -> typing.Any:
+    async def callback(self, interaction: discord.Interaction) -> None:
         """Handle the interaction."""
         try:
             m: typing.Optional[discord.Message] = await self.channel.send(embed=self.view.embed)
@@ -65,7 +65,7 @@ class EmbedCancel(discord.ui.Button["EmbedBuilder"]):
     def __init__(self) -> None:
         super().__init__(label="Cancel", style=discord.ButtonStyle.red)
 
-    async def callback(self, interaction: discord.Interaction) -> typing.Any:
+    async def callback(self, interaction: discord.Interaction) -> None:
         """Handle the interaction."""
         assert self.view is not None
 
@@ -147,7 +147,10 @@ class BotView(discord.ui.View):
                 return
 
     async def on_error(  # pylint: disable=arguments-differ
-        self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item,
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: discord.ui.Item,
     ) -> None:
         """Handle the error."""
         self.ctx.bot.dispatch("command_error", self.ctx, error)
@@ -357,14 +360,14 @@ class EmbedOptions(discord.ui.Select):
 class EmbedBuilder(BotView):
     """A view that builds an embed."""
 
-    def __init__(self, ctx: Context, **kwargs: typing.Any) -> None:
+    def __init__(self, ctx: Context, **kwargs: list[discord.ui.Item]) -> None:
         super().__init__(ctx, timeout=100)
 
         self.ctx = ctx
         self.add_item(EmbedOptions(self.ctx))
 
-        for _ in kwargs.get("items", []):  # to add extra buttons and handle this view externally
-            self.add_item(_)
+        for i in kwargs.get("items", []):
+            self.add_item(i)
 
     @property
     def formatted(self) -> dict:
@@ -379,11 +382,11 @@ class EmbedBuilder(BotView):
         with suppress(discord.HTTPException):
             self.message = await self.message.edit(content=self.content, embed=self.embed, view=self)
 
-    async def rendor(self, **kwargs: typing.Any) -> None:
+    async def rendor(self, *, content: str | None = None, embed: discord.Embed = discord.utils.MISSING, **kw: ...) -> None:
         """Rendor the embed builder."""
         self.message: discord.Message = await self.ctx.reply(
-            kwargs.get("content", "\u200b"),
-            embed=kwargs.get("embed", self.help_embed),
+            content or "\u200b",
+            embed=embed or self.help_embed,
             view=self,
         )
 
@@ -403,4 +406,250 @@ class EmbedBuilder(BotView):
                 text="Footer Message",
                 icon_url="https://media.discordapp.net/attachments/853174868551532564/860464989164535828/embed_footer.png",
             )
+        )
+
+
+class ChannelSelect(discord.ui.Select["AnnouncementView"]):
+    """A select menu that allows you to select a channel."""
+
+    _keywords = (
+        "announcement",
+        "announcements",
+        "announce",
+        "notify",
+        "notification",
+        "notifications",
+        "news",
+        "updates",
+        "update",
+        "important",
+        "important-stuff",
+        "read-me",
+        "readme",
+        "read-me-first",
+        "readme-first",
+        "info",
+        "information",
+    )
+
+    def __init__(self, *, ctx: Context) -> None:
+        options = []
+        for channel in ctx.guild.text_channels:
+            _to_append = False
+            bot_perms = channel.permissions_for(ctx.guild.me)
+            my_perms = channel.permissions_for(ctx.author)
+
+            if not (my_perms.read_messages and my_perms.send_messages and my_perms.embed_links):
+                continue
+
+            if not (bot_perms.read_messages and bot_perms.send_messages and bot_perms.embed_links):
+                continue
+
+            if any(name in channel.name.lower() for name in self._keywords):
+                _to_append = True
+
+            elif channel.is_news():
+                _to_append = True
+
+            elif channel.is_nsfw():
+                _to_append = False
+
+            if _to_append:
+                options.append(
+                    discord.SelectOption(
+                        label=f"#{channel.name}",
+                        value=str(channel.id),
+                        description=f"Total Members: {len(channel.members)}",
+                    ),
+                )
+
+        super().__init__(
+            placeholder="Select a channel to send the announcement to.",
+            min_values=1,
+            max_values=1,
+            options=options[:25],
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """Handle the interaction."""
+        assert self.view is not None
+
+        await interaction.response.send_message(
+            f"\N{WHITE HEAVY CHECK MARK} | You selected <#{self.values[0]}>.",
+        )
+        self.view.current_channel = int(self.values[0])
+
+
+class AnnouncementView(discord.ui.View):  # pylint: disable=too-many-instance-attributes
+    """A view for the announcement command."""
+
+    message: discord.Message
+
+    def __init__(
+        self,
+        ctx: Context,
+        *,
+        timeout: float | None = 180,
+        current_channel: int,
+        content: str,
+        in_embed: bool = False,
+    ) -> None:
+        super().__init__(timeout=timeout)
+
+        self.ctx = ctx
+        self.channel_select = self.add_item(ChannelSelect(ctx=ctx))
+        self.current_channel = current_channel
+        self.content = content
+        self.in_embed = in_embed
+
+        self._config_ping_everyone = False
+        self._config_delete_after: float = -1
+        self._config_reply_reference: int = -1
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:  # pylint: disable=arguments-differ
+        """Check if the interaction is valid."""
+        if interaction.user.id != self.ctx.author.id:
+            await interaction.response.send_message(
+                "Sorry, you can't use this interaction as it is not started by you.",
+                ephemeral=True,
+            )
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        """Disable all buttons and selects."""
+        if hasattr(self, "message"):
+            for b in self.children:
+                if isinstance(b, (discord.ui.Button)) and b.style != discord.ButtonStyle.link:
+                    b.style, b.disabled = discord.ButtonStyle.grey, True
+                elif isinstance(b, discord.ui.Select):
+                    b.disabled = True
+            with suppress(discord.HTTPException):
+                await self.message.edit(view=self)
+                return
+
+    async def on_error(  # pylint: disable=arguments-differ
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: discord.ui.Item,
+    ) -> None:
+        """Handle the error."""
+        await interaction.response.send_message(f"An error occured: {error}", ephemeral=True)
+        interaction.client.dispatch("error", error, ctx=self.ctx, interaction=interaction, item=item)
+
+    @discord.ui.button(label="Send Announcement", style=discord.ButtonStyle.green, row=1)
+    async def send_announcement(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        """Send the announcement."""
+        await interaction.response.defer()
+        channel = self.ctx.guild.get_channel(self.current_channel)
+        if channel is None:
+            return await interaction.followup.send(
+                "The channel you selected was deleted or I can't access it anymore.",
+                ephemeral=True,
+            )
+
+        if self.in_embed:
+            embed = discord.Embed(
+                title="Announcement",
+                description=self.content,
+                color=discord.Color.blurple(),
+            )
+            embed.set_footer(text=f"Announcement by {self.ctx.author}", icon_url=self.ctx.author.display_avatar.url)
+            content = discord.utils.MISSING
+        else:
+            embed = discord.utils.MISSING
+            content = self.content
+
+        if not isinstance(channel, discord.CategoryChannel | discord.ForumChannel):
+            delete_after = self._config_delete_after if self._config_delete_after > 0 else None
+            reply_reference = (
+                channel.get_partial_message(self._config_reply_reference)
+                if self._config_reply_reference > discord.utils.DISCORD_EPOCH
+                else None
+            )
+            allowed_mentions = (
+                discord.AllowedMentions(everyone=self._config_ping_everyone)
+                if self._config_ping_everyone
+                else discord.AllowedMentions(users=True, roles=True)
+            )
+
+            await channel.send(
+                content,
+                embed=embed,
+                delete_after=delete_after,  # type: ignore
+                reference=reply_reference,  # type: ignore
+                allowed_mentions=allowed_mentions,
+            )
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
+    async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        """Cancel the announcement."""
+        await interaction.response.defer()
+        await interaction.followup.send("Cancelled the announcement.", ephemeral=True)
+        await self.message.delete(delay=0)
+
+    @discord.ui.button(label="Ping @everyone: No", style=discord.ButtonStyle.blurple, row=3)
+    async def ping_everyone(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """Ping @everyone in the announcement."""
+        await interaction.response.defer()
+        self._config_ping_everyone = not self._config_ping_everyone
+        button.label = f"Ping @everyone: {self._config_ping_everyone}"
+        button.style = discord.ButtonStyle.green if self._config_ping_everyone else discord.ButtonStyle.blurple
+        await self.message.edit(view=self)
+
+        await interaction.followup.send(
+            ("Will" if self._config_ping_everyone else "Won't") + " ping @everyone.",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Delete After: Infinity", style=discord.ButtonStyle.blurple, row=3)
+    async def delete_after(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """Delete the announcement after a specified time."""
+        await interaction.response.defer()
+        await interaction.followup.send("Please enter the time in seconds to delete the announcement after.")
+        try:
+            msg = await self.ctx.bot.wait_for(
+                "message",
+                check=lambda m: (m.author == self.ctx.author and m.channel == self.ctx.channel) and m.content.isdigit(),
+                timeout=30,
+            )
+        except TimeoutError:
+            return await interaction.followup.send("You took too long to respond.")
+
+        self._config_delete_after = float(msg.content)
+        button.label = f"Delete After: {self._config_delete_after}"
+        button.style = discord.ButtonStyle.green
+        await self.message.edit(view=self)
+        await msg.delete(delay=0)
+
+        await interaction.followup.send(
+            f"Message will be deleted after {self._config_delete_after} seconds.",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Reply Reference: Not Set", style=discord.ButtonStyle.blurple, row=3)
+    async def reply_reference(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+        """Reply to a message in the announcement."""
+        await interaction.response.defer()
+        await interaction.followup.send("Please enter the message ID to reply to.")
+        try:
+            msg = await self.ctx.bot.wait_for(
+                "message",
+                check=lambda m: (m.author == self.ctx.author and m.channel == self.ctx.channel) and m.content.isdigit(),
+                timeout=30,
+            )
+        except TimeoutError:
+            return await interaction.followup.send("You took too long to respond.")
+
+        self._config_reply_reference = int(msg.content)
+        button.label = f"Reply Reference: {self._config_reply_reference}"
+        button.style = discord.ButtonStyle.green
+        await self.message.edit(view=self)
+        await msg.delete(delay=0)
+
+        await interaction.followup.send(
+            f"Message will be replied to {self._config_reply_reference}.",
+            ephemeral=True,
         )

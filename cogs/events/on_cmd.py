@@ -23,10 +23,8 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
-from discord.ext import tasks
 from pymongo import UpdateOne
 
 from core import Bot, Cog, Context  # pylint: disable=import-error
@@ -39,22 +37,12 @@ class OnCommand(Cog):
 
     def __init__(self, bot: Bot) -> None:
         self.bot = bot
-        self.__commands_invoked = []
-        self.collection = bot.mongo.customBots.commandCollection  # type: ignore
-        self.__update_commands.start()  # pylint: disable=no-member
-        self.lock = asyncio.Lock()
-
-    async def cog_unload(self) -> None:
-        """Cancel the task when the cog is unloaded."""
-        if self.__update_commands.is_running():  # pylint: disable=no-member
-            self.__update_commands.cancel()  # pylint: disable=no-member
 
     @Cog.listener()
     async def on_command(self, ctx: Context) -> None:
         """Log commands invoked by the bot."""
-        assert ctx.guild and ctx.command and ctx.bot.user
-
         log.debug("%s invoked by %s (%s) in %s (%s)", ctx.command, ctx.author, ctx.author.id, ctx.guild, ctx.guild.id)
+
         data = UpdateOne(
             {"id": ctx.bot.user.id},
             {
@@ -64,14 +52,11 @@ class OnCommand(Cog):
             },
             upsert=True,
         )
-        self.__commands_invoked.append(data)
+        self.bot.add_to_db_writer(collection="commandCollection", entity=data)
 
     @Cog.listener()
     async def on_command_completion(self, ctx: Context) -> None:
         """Log commands invoked by the bot."""
-        assert ctx.guild and ctx.command and ctx.bot.user
-
-        log.debug("%s invoked by %s (%s) in %s (%s)", ctx.command, ctx.author, ctx.author.id, ctx.guild, ctx.guild.id)
         data = UpdateOne(
             {"id": ctx.bot.user.id},
             {
@@ -89,14 +74,4 @@ class OnCommand(Cog):
             upsert=True,
         )
 
-        self.__commands_invoked.append(data)
-
-    @tasks.loop(minutes=1)
-    async def __update_commands(self) -> None:
-        async with self.lock:
-            if self.__commands_invoked:
-                lst = self.__commands_invoked.copy()
-                log.debug("writing total of %s commands", len(lst))
-                await self.collection.bulk_write(lst)
-                log.debug("wrote total of %s commands", len(lst))
-                self.__commands_invoked = []
+        self.bot.add_to_db_writer(collection="commandCollection", entity=data)

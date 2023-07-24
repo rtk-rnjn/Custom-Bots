@@ -59,16 +59,16 @@ class Config:  # pylint: disable=too-many-instance-attributes
         **kwargs: str | int | bool | list[str] | None,
     ) -> None:
         # fmt: off
-        self._id: int         = kwargs.get("id")        # type: ignore
-        self._name: str       = kwargs.get("name")      # type: ignore
-        self._token: str      = kwargs.get("token")     # type: ignore
-        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore
-        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore
-        self._prefix: str     = kwargs.get("prefix")    # type: ignore
-        self._status: str     = kwargs.get("status")    # type: ignore
-        self._activity: str   = kwargs.get("activity")  # type: ignore
-        self._media: str      = kwargs.get("media")     # type: ignore
-        self._guild_id: int   = kwargs.get("guild_id")  # type: ignore
+        self._id: int         = kwargs.get("id")        # type: ignore  # noqa
+        self._name: str       = kwargs.get("name")      # type: ignore  # noqa
+        self._token: str      = kwargs.get("token")     # type: ignore  # noqa
+        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore  # noqa
+        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore  # noqa
+        self._prefix: str     = kwargs.get("prefix")    # type: ignore  # noqa
+        self._status: str     = kwargs.get("status")    # type: ignore  # noqa
+        self._activity: str   = kwargs.get("activity")  # type: ignore  # noqa
+        self._media: str      = kwargs.get("media")     # type: ignore  # noqa
+        self._guild_id: int   = kwargs.get("guild_id")  # type: ignore  # noqa
         # fmt: on
 
         self.__kw = kwargs
@@ -187,13 +187,13 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self._modlog_channel = channel_id  # pylint: disable=attribute-defined-outside-init
         self["modlog_channel"] = channel_id
 
-    def __getattr__(self, __name: str) -> Any:
+    def __getattr__(self, __name: str) -> Any:  # noqa: ANN401
         return self.__kw.get(__name, None)
 
-    def __getitem__(self, __name: str) -> Any:
+    def __getitem__(self, __name: str) -> Any:  # noqa: ANN401
         return self.__kw.get(__name, None)
 
-    def __setitem__(self, __name: str, __value: Any) -> None:
+    def __setitem__(self, __name: str, __value: Any) -> None:  # noqa: ANN401
         self.__kw[__name] = __value
 
     def __delitem__(self, __name: str) -> None:
@@ -233,7 +233,7 @@ class Null:
     def __bool__(self) -> bool:
         return False
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> bool:  # noqa: ANN401
         return isinstance(other, Null)
 
     def __getattr__(self, name: str) -> Null:
@@ -256,7 +256,7 @@ class Environment:
         return self.parse_entity(self.__dict.get(name))
 
     @staticmethod
-    def parse_entity(entity: Any, *, return_null: bool = True) -> ANY:
+    def parse_entity(entity: str | int | float | None, *, return_null: bool = True) -> ANY:
         """Parse an entity to a python object."""
         if entity is None:
             return Null() if return_null else None

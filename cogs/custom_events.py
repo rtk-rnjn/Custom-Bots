@@ -56,7 +56,7 @@ class EventCustom(Cog):
         messageChannel: int | None = None,  # noqa: N803
         messageAuthor: int | None = None,  # noqa: N803
         messageURL: str | None = None,  # noqa: N803
-        **_: Any,
+        **_: Any,  # noqa: ANN401
     ) -> None:
         """A custom parser on timer complete event."""
         if not content:
@@ -83,7 +83,7 @@ class EventCustom(Cog):
             return
 
     @Cog.listener("on_giveaway_timer_complete")
-    async def extra_parser_giveaway(self, **kw: Any) -> None:
+    async def extra_parser_giveaway(self, **kw: Any) -> None:  # noqa: ANN401
         """A custom parser on giveaway timer complete event."""
         log.info("parsing giveaway...")
         extra = kw.get("extra")
@@ -94,34 +94,37 @@ class EventCustom(Cog):
         if name == "GIVEAWAY_END" and (main := extra.get("main")):
             await self._parse_giveaway(**main)
 
-    async def _parse_giveaway(self, **kw: Any) -> None:
+    async def _parse_giveaway(self, *, message_id: int, giveaway_channel: int, guild_id: int, **kw: Any) -> None:  # noqa: ANN401
         """Helper function to parse giveaway."""
         data: dict[str, Any] = await self.bot.giveaways.find_one(
             {
-                "message_id": kw.get("message_id"),
-                "guild_id": kw.get("guild_id"),
+                "message_id": message_id,
+                "guild_id": guild_id,
                 "status": "ONGOING",
             },
         )
         cog: Giveaway = self.bot.get_cog("Giveaway")  # type: ignore
         member_ids: list[int] = await cog.end_giveaway(self.bot, **data)
         channel: discord.TextChannel = await self.bot.getch(
-            self.bot.get_channel, self.bot.fetch_channel, kw.get("giveaway_channel"),
+            self.bot.get_channel,
+            self.bot.fetch_channel,
+            giveaway_channel,
         )
         await self.bot.giveaways.find_one_and_update(
-            {"message_id": kw.get("message_id"), "status": "ONGOING"},
+            {"message_id": message_id, "status": "ONGOING"},
             {"$set": {"status": "END"}},
         )
         if not channel:
             return
-        msg_link = f"https://discord.com/channels/{kw.get('guild_id')}/{kw.get('giveaway_channel')}/{kw.get('message_id')}"
+        msg_link = f"https://discord.com/channels/{guild_id}/{giveaway_channel}/{message_id}"
         if not member_ids:
             await channel.send(f"No winners!\n> {msg_link}")
             return
 
         joiner = ">, <@".join([str(i) for i in member_ids])
 
-        await channel.send(f"Congrats <@{joiner}> you won {kw.get('prize')}\n" f"> {msg_link}")
+        _reference = channel.get_partial_message(message_id)
+        await channel.send(f"Congrats <@{joiner}> you won {kw.get('prize')}\n" f"> {msg_link}", reference=_reference)
 
 
 async def setup(bot: Bot) -> None:

@@ -307,6 +307,23 @@ class Meta(Cog):
 
         await ctx.reply(embed=embed)
 
+    @commands.command(name="membercount", aliases=["mc", "member-count"])
+    async def member_count(self, ctx: Context) -> None:
+        """Get the member count of the server."""
+        assert ctx.guild is not None
+
+        embed = discord.Embed(
+            title=f"Member Count: {ctx.guild.name}",
+            description=(
+                f"Total Members: {len(ctx.guild.members)}\n"
+                f"Humans: {len(list(filter(lambda m: not m.bot, ctx.guild.members)))}\n"
+                f"Bots: {len(list(filter(lambda m: m.bot, ctx.guild.members)))}"
+            ),
+            color=ctx.author.color,
+            timestamp=discord.utils.utcnow(),
+        )
+        await ctx.reply(embed=embed)
+
 
 async def setup(bot: Bot) -> None:
     """Load the Meta cog."""
