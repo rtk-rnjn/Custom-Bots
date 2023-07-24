@@ -430,6 +430,8 @@ class ChannelSelect(discord.ui.Select["AnnouncementView"]):
         "readme-first",
         "info",
         "information",
+        "rules",
+        "rule",
     )
 
     def __init__(self, *, ctx: Context) -> None:
