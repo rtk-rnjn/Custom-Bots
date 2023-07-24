@@ -320,6 +320,7 @@ class Misc(Cog):
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     def formatter(self, response: str, message: discord.Message) -> str:
+        """Format the announcement."""
         cog: Autoresponder = self.bot.get_cog("Autoresponder")  # type: ignore
         return cog.formatter(response, message)
 
