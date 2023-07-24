@@ -42,7 +42,8 @@ class OnMessage(Cog):
     @Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         """Log messages sent by the bot."""
-        assert message.guild and self.bot.user
+        if message.guild is None:
+            return
 
         if message.author.bot:
             return

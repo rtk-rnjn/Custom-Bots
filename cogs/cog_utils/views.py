@@ -456,6 +456,9 @@ class ChannelSelect(discord.ui.Select["AnnouncementView"]):
             elif channel.is_nsfw():
                 _to_append = False
 
+            else:
+                _to_append = True
+
             if _to_append:
                 options.append(
                     discord.SelectOption(
@@ -479,6 +482,7 @@ class ChannelSelect(discord.ui.Select["AnnouncementView"]):
 
         await interaction.response.send_message(
             f"\N{WHITE HEAVY CHECK MARK} | You selected <#{self.values[0]}>.",
+            ephemeral=True,
         )
         self.view.current_channel = int(self.values[0])
 
@@ -577,13 +581,37 @@ class AnnouncementView(discord.ui.View):  # pylint: disable=too-many-instance-at
                 else discord.AllowedMentions(users=True, roles=True)
             )
 
-            await channel.send(
-                content,
-                embed=embed,
-                delete_after=delete_after,  # type: ignore
-                reference=reply_reference,  # type: ignore
-                allowed_mentions=allowed_mentions,
-            )
+            bot_perms = channel.permissions_for(self.ctx.guild.me)
+            if not (bot_perms.read_messages and bot_perms.send_messages and bot_perms.embed_links):
+                return await interaction.followup.send(
+                    "I don't have enough permissions to send messages in that channel.",
+                    ephemeral=True,
+                )
+
+            my_perms = channel.permissions_for(self.ctx.author)
+            if not (my_perms.read_messages and my_perms.send_messages and my_perms.embed_links):
+                return await interaction.followup.send(
+                    "You don't have enough permissions to send messages in that channel.",
+                    ephemeral=True,
+                )
+
+            try:
+                await channel.send(
+                    content,
+                    embed=embed,
+                    delete_after=delete_after,  # type: ignore
+                    reference=reply_reference,  # type: ignore
+                    allowed_mentions=allowed_mentions,
+                )
+            except discord.HTTPException as e:
+                await channel.send(content, embed=embed)
+                await interaction.followup.send(
+                    (
+                        f"Message Sent but, an error occured while sending the announcement: {e}\n"
+                        "Please report this to the developer."
+                    ),
+                    ephemeral=True,
+                )
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, row=1)
     async def cancel(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
@@ -610,7 +638,7 @@ class AnnouncementView(discord.ui.View):  # pylint: disable=too-many-instance-at
     async def delete_after(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """Delete the announcement after a specified time."""
         await interaction.response.defer()
-        await interaction.followup.send("Please enter the time in seconds to delete the announcement after.")
+        await interaction.followup.send("Please enter the time in seconds to delete the announcement after.", ephemeral=True)
         try:
             msg = await self.ctx.bot.wait_for(
                 "message",
@@ -635,7 +663,7 @@ class AnnouncementView(discord.ui.View):  # pylint: disable=too-many-instance-at
     async def reply_reference(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """Reply to a message in the announcement."""
         await interaction.response.defer()
-        await interaction.followup.send("Please enter the message ID to reply to.")
+        await interaction.followup.send("Please enter the message ID to reply to.", ephemeral=True)
         try:
             msg = await self.ctx.bot.wait_for(
                 "message",

@@ -88,6 +88,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             .replace("{guild_id}", str(message.guild.id))
             # message
             .replace("{message}", message.content)
+            .replace("{content}", message.content)
             .replace("{message_id}", str(message.id))
             # bot
             .replace("{bot}", str(self.bot.user))

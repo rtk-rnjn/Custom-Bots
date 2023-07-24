@@ -27,7 +27,7 @@ import asyncio
 import json
 import logging
 from collections import Counter
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import discord
 from discord.ext import commands
@@ -35,6 +35,9 @@ from discord.ext import commands
 from core import Bot, Cog, Context  # pylint: disable=import-error
 
 from .cog_utils import AnnouncementView, EmbedBuilder, EmbedCancel, EmbedSend
+
+if TYPE_CHECKING:
+    from .autoresponder import Autoresponder
 
 log = logging.getLogger("misc")
 
@@ -240,7 +243,11 @@ class Misc(Cog):
     @commands.group(name="announce", aliases=["announcements", "announcement"], invoke_without_command=True)
     @commands.has_permissions(manage_messages=True)
     async def announce_group(
-        self, ctx: Context, channel: Optional[discord.TextChannel] = None, *, msg: Optional[str] = None,
+        self,
+        ctx: Context,
+        channel: Optional[discord.TextChannel] = None,
+        *,
+        msg: Optional[str] = None,
     ) -> None:
         """Send an announcement to the announcements channel."""
         if ctx.invoked_subcommand is None:
@@ -283,9 +290,38 @@ class Misc(Cog):
         await ctx.message.delete(delay=0)
         pinnged = ("@everyone" in msg) or ("@here" in msg)
         if not pinnged:
-            msg = f"@everyone\n{msg}\n\nRegards,\n{ctx.author.mention} ({ctx.author})"
+            fmt = self.bot.config["announcement_format"] or "@everyone\n{content}\n\nRegards,\n{author_mention} ({author})"
+            msg = self.formatter(fmt, ctx.message)
 
         await ctx.send(msg)
+
+    @announce_group.command(name="quickembed", aliases=["qe"])
+    @commands.has_permissions(manage_messages=True)
+    async def announce_quickembed_command(self, ctx: Context, *, msg: str) -> None:
+        """Send an announcement to the announcements channel."""
+        await ctx.message.delete(delay=0)
+        pinnged = ("@everyone" in msg) or ("@here" in msg)
+        if not pinnged:
+            fmt = self.bot.config["announcement_format"] or "@everyone\n{content}\n\nRegards,\n{author_mention} ({author})"
+            msg = self.formatter(fmt, ctx.message)
+
+        await ctx.send(embed=discord.Embed(description=msg))
+
+    @announce_group.command(name="format", aliases=["f"])
+    @commands.has_permissions(manage_guild=True)
+    async def announce_format_command(self, ctx: Context, *, fmt: str) -> None:
+        """Set the announcement format.
+
+        **Example:**
+        - `[p]announce format @everyone {content} - {author_mention}`
+        """
+        self.bot.config["announcement_format"] = fmt
+        await self.bot.config.update_to_db()
+        await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+
+    def formatter(self, response: str, message: discord.Message) -> str:
+        cog: Autoresponder = self.bot.get_cog("Autoresponder")  # type: ignore
+        return cog.formatter(response, message)
 
 
 async def setup(bot: Bot) -> None:
