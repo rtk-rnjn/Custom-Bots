@@ -288,11 +288,10 @@ class Misc(Cog):
     async def announce_quick_command(self, ctx: Context, *, msg: str) -> None:
         """Send an announcement to the announcements channel."""
         await ctx.message.delete(delay=0)
-        pinnged = ("@everyone" in msg) or ("@here" in msg)
-        if not pinnged:
-            fmt = self.bot.config["announcement_format"] or "@everyone\n{content}\n\nRegards,\n{author_mention} ({author})"
-            ctx.message.content = msg
-            msg = self.formatter(fmt, ctx.message)
+
+        fmt = self.bot.config["announcement_format"] or "@everyone\n**{content}**\n\nRegards,\n{author_mention} ({author})"
+        ctx.message.content = msg
+        msg = self.formatter(fmt, ctx.message)
 
         await ctx.send(msg)
 
@@ -301,11 +300,10 @@ class Misc(Cog):
     async def announce_quickembed_command(self, ctx: Context, *, msg: str) -> None:
         """Send an announcement to the announcements channel."""
         await ctx.message.delete(delay=0)
-        pinnged = ("@everyone" in msg) or ("@here" in msg)
-        if not pinnged:
-            fmt = self.bot.config["announcement_format"] or "@everyone\n{content}\n\nRegards,\n{author_mention} ({author})"
-            ctx.message.content = msg
-            msg = self.formatter(fmt, ctx.message)
+
+        fmt = self.bot.config["announcement_format"] or "@everyone\n**{content}**\n\nRegards,\n{author_mention} ({author})"
+        ctx.message.content = msg
+        msg = self.formatter(fmt, ctx.message)
 
         await ctx.send(embed=discord.Embed(description=msg))
 
