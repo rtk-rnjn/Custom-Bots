@@ -76,7 +76,7 @@ class AuditFlag(commands.FlagConverter, case_insensitive=True, prefix="--", deli
 
     oldest_first: Annotated[bool | None, convert_bool] = commands.flag(
         name="oldest_first",
-        aliases=["of", "oldest-first"],
+        aliases=["of", "oldestfirst"],
         default=None,
         description="Sort by oldest first",
         override=True,

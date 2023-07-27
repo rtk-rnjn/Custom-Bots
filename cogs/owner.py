@@ -30,12 +30,13 @@ from typing import Literal
 
 import arrow
 import discord
-from cog_utils import AuditFlag
 from colorama import Fore
 from discord.ext import commands
 from jishaku.paginators import PaginatorInterface
 
 from core import Bot, Cog, Context  # pylint: disable=import-error
+
+from .cog_utils import AuditFlag
 
 log = logging.getLogger("owner")
 
