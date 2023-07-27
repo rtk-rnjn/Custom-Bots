@@ -86,6 +86,7 @@ class EventCustom(Cog):
     async def extra_parser_giveaway(self, **kw: Any) -> None:  # noqa: ANN401
         """A custom parser on giveaway timer complete event."""
         log.info("parsing giveaway...")
+        await self.bot.log_bot_event(content=f"Parsing giveaway: {kw}")
         extra = kw.get("extra")
         if not extra:
             return
@@ -112,18 +113,18 @@ class EventCustom(Cog):
         )
         cog: Giveaway = self.bot.get_cog("Giveaway")  # type: ignore
         member_ids: list[int] = await cog.end_giveaway(self.bot, **data)
-        channel: discord.TextChannel = await self.bot.getch(
+        channel: discord.TextChannel | None = await self.bot.getch(
             self.bot.get_channel,
             self.bot.fetch_channel,
             giveaway_channel,
         )
+        if not channel:
+            return
         await self.bot.giveaways.find_one_and_update(
             {"message_id": message_id, "status": "ONGOING"},
             {"$set": {"status": "END"}},
         )
-        if not channel:
-            return
-        msg_link = f"https://discord.com/channels/{guild_id}/{giveaway_channel}/{message_id}"
+        msg_link = discord.PartialMessage(channel=channel, id=message_id).jump_url
         if not member_ids:
             await channel.send(f"No winners!\n> {msg_link}")
             return

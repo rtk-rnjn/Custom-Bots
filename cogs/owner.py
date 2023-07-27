@@ -67,11 +67,14 @@ class Owner(Cog):
         `- [p]playing Hello World!`
         """
         p_types = {"playing": 0, "streaming": 1, "listening": 2, "watching": 3, None: 0}
-        await ctx.bot.change_presence(
+        await self.bot.change_presence(
             activity=discord.Activity(name=media, type=p_types[ctx.invoked_with]),
             status=discord.Status(status),
         )
         log.info("presence changed to %s %s", ctx.invoked_with, media)
+        await self.bot.log_bot_event(
+            content=f"Presence changed to {ctx.invoked_with} {media}",
+        )
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
     @commands.command()
@@ -90,6 +93,7 @@ class Owner(Cog):
         """
         self.bot.config.set_prefix(prefix)
         log.info("prefix changed to %s", prefix)
+        await self.bot.log_bot_event(content=f"Prefix changed to {prefix}")
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
         await self.bot.mongo.customBots.mainConfigCollection.update_one(
             {"id": self.bot.config.id},

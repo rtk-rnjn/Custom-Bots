@@ -31,12 +31,13 @@ import os
 import re
 from collections import Counter
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, TypeVar
 
 import aiohttp
 import discord
 import jishaku  # noqa: F401  # pylint: disable=unused-import
 import pymongo
+from colorama import Fore
 from discord.ext import commands, tasks
 from pymongo.errors import ConnectionFailure
 from pymongo.results import DeleteResult, InsertOneResult
@@ -56,6 +57,9 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(CustomFormatter())
 logger.addHandler(handler)
+
+
+T = TypeVar("T")
 
 
 class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
@@ -131,14 +135,19 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
                 await self.load_extension(cog)
             except commands.ExtensionNotFound:
                 logger.warning("extension %s not found. Skipping.", cog)
+                await self.log_bot_event(content=f"Extension {cog} not found. Skipping.", log_lvl="WARNING")
             except commands.ExtensionFailed as err:
                 logger.warning("extension %s failed to load: %s", cog, err, exc_info=True)
+                await self.log_bot_event(content=f"Extension {cog} failed to load: {err}", log_lvl="WARNING")
             except commands.NoEntryPointError:
                 logger.warning("extension %s has no setup function. Skipping.", cog)
+                await self.log_bot_event(content=f"Extension {cog} has no setup function. Skipping.", log_lvl="WARNING")
             except commands.ExtensionAlreadyLoaded:
                 logger.warning("extension %s is already loaded. Skipping.", cog)
+                await self.log_bot_event(content=f"Extension {cog} is already loaded. Skipping.", log_lvl="WARNING")
             else:
                 logger.info("extension %s loaded", cog)
+                await self.log_bot_event(content=f"Extension {cog} loaded", log_lvl="INFO")
 
         self.update_to_db.start()  # pylint: disable=no-member
 
@@ -167,6 +176,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         getattr(self.user, "id", None)
 
         logger.info("Logged in as %s", self.user)
+        await self.log_bot_event(content=f"Logged in as {self.user}", log_lvl="INFO")
         self.timer_task = self.loop.create_task(self.dispatch_timers())
 
     async def on_message(self, message: discord.Message) -> None:  # pylint: disable=arguments-differ
@@ -184,13 +194,10 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         self,
         guild: discord.Guild,
         member_id: int | str | discord.Object,
-        in_guild: bool = True,
     ) -> discord.Member | None:
         """Get a member from cache or fetch if not found."""
         member_id = member_id.id if isinstance(member_id, discord.Object) else int(member_id)
 
-        if not in_guild:
-            return await self.getch(self.get_user, self.fetch_user, int(member_id))
         member = guild.get_member(member_id)
         if member is not None:
             return member
@@ -205,14 +212,14 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
     async def getch(
         self,
-        get_function: Callable,
-        fetch_function: Callable[..., Awaitable],
+        get_function: Callable[[int], T],
+        fetch_function: Callable[[int], Awaitable[T]],
         entity: int,
-    ) -> Any:  # noqa: ANN401
+    ) -> T | None:  # noqa: ANN401
         """Get an entity from cache or fetch if not found."""
-        entity = get_function(entity)
-        if entity is not None:
-            return entity
+        resolved = get_function(entity)
+        if resolved is not None:
+            return resolved
 
         try:
             return await fetch_function(entity)
@@ -292,11 +299,11 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             error,
             commands.MissingRequiredArgument | commands.BadUnionArgument | commands.TooManyArguments,
         ):
-            ctx.command.reset_cooldown(ctx)  # type: ignore
-            return await ctx.reply(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.command.qualified_name}` for more info.")  # type: ignore
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.reply(f"Invalid Syntax. `{ctx.clean_prefix}help {ctx.command.qualified_name}` for more info.")
 
         if isinstance(error, commands.BadArgument):
-            ctx.command.reset_cooldown(ctx)  # type: ignore
+            ctx.command.reset_cooldown(ctx)
             return await ctx.reply(f"Invalid argument: {error}")
 
         raise error
@@ -309,6 +316,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         """Wait for the active timer."""
         timers = await self.get_active_timer(**filters)
         logger.info("received timers: %s", timers)
+        await self.log_bot_event(content=f"Received timers from database: {timers}", log_lvl="INFO")
 
         if timers:
             self._have_data.set()
@@ -317,6 +325,8 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         self._have_data.clear()
         self._current_timer = None
         logger.info("waiting for timers")
+        await self.log_bot_event(content="Waiting for timers from database", log_lvl="INFO")
+
         await self._have_data.wait()
 
         return await self.get_active_timer()
@@ -325,6 +335,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         """Main loop for dispatching timers."""
         try:
             logger.info("Starting timer dispatch")
+            await self.log_bot_event(content="Starting timer dispatch", log_lvl="INFO")
             while not self.is_closed():
                 timers = self._current_timer = await self.wait_for_active_timers(bot_id=self.user.id)  # type: ignore
 
@@ -346,6 +357,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
 
         except asyncio.CancelledError:
             logger.info("Timer dispatch cancelled")
+            await self.log_bot_event(content="Timer dispatch cancelled", log_lvl="INFO")
             raise
 
     async def call_timer(self, collection, **data: dict | float) -> None:  # noqa: ANN001
@@ -427,7 +439,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
     async def delete_timer(self, **kw: dict) -> DeleteResult:
         """Delete a timer."""
         collection = self.timers
-        data = await collection.delete_one({"_id": kw["_id"]})
+        data: DeleteResult = await collection.delete_one({"_id": kw["_id"]})
         delete_count = data.deleted_count
         if delete_count == 0:
             return data
@@ -476,16 +488,16 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         if not ctx.guild.chunked:
             await ctx.guild.chunk(cache=True)
 
-        guild_id = self.__config.guild_id
+        guild_id = self.config.guild_id
 
-        if ctx.guild and guild_id and ctx.guild.id != guild_id and not await ctx.bot.is_owner(ctx.author):
+        if ctx.guild and guild_id and ctx.guild.id != guild_id and not await self.is_owner(ctx.author):
             await ctx.reply("This command is disabled in this guild.")
             msg = "This command is disabled in this guild."
             raise commands.DisabledCommand(msg)
 
     async def get_prefix(self, message: discord.Message) -> list[str]:  # pylint: disable=arguments-differ
         """Get the prefix for the guild."""
-        prefix = self.__config.prefix
+        prefix = self.config.prefix
         comp = re.compile(f"^({re.escape(prefix)}).*", flags=re.I)
         match = comp.match(message.content)
         if match is not None:
@@ -501,6 +513,7 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
     async def update_to_db(self) -> None:
         """Update the database."""
         async with self.lock:
+            logger.debug("lock acquird, writing to database")
             group: dict[str, list[pymongo.UpdateOne | pymongo.UpdateMany]] = {}
             for collection, entity in self.__universal_db_writer:
                 group.setdefault(collection, []).append(entity)
@@ -509,4 +522,43 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
                 col = self.sync_mongo["customBots"][collection]
                 await asyncio.to_thread(col.bulk_write, entities, ordered=False)
 
+            logger.debug("writing to database done, releasing lock and clearning the writer")
             self.__universal_db_writer = []
+
+    async def execute_webhook_from_url(
+        self, webhook_url: str, *, error_supperssor: tuple | None = None, **kwargs: Any,  # noqa: ANN401
+    ) -> discord.WebhookMessage | None:
+        """Execute a webhook from a webhook url."""
+        webhook = discord.Webhook.from_url(webhook_url, session=self.session, client=self, bot_token=self.config.token)
+        return await self.execute_webhook(webhook, error_supperssor=error_supperssor, **kwargs)
+
+    async def execute_webhook(
+        self, webhook: discord.Webhook, *, error_supperssor: tuple | None = None, **kwargs: Any,  # noqa: ANN401
+    ) -> discord.WebhookMessage | None:
+        """Execute a webhook."""
+        error_supperssor = error_supperssor or (discord.NotFound, discord.Forbidden)
+
+        try:
+            return await webhook.send(**kwargs)
+        except error_supperssor:
+            pass
+
+    COLOR_FMT = {
+        "INFO": Fore.GREEN,
+        "WARNING": Fore.YELLOW,
+        "ERROR": Fore.RED,
+    }
+
+    async def log_bot_event(self, **kw: Any) -> discord.WebhookMessage | None:  # noqa: ANN401
+        """Log a bot event."""
+        now = discord.utils.utcnow()
+        now = f'{Fore.CYAN}{now.strftime("%Y-%m-%d %H:%M:%S")}'
+        log_lvl = kw.pop("log_lvl", "INFO")
+        log_lvl = f"{self.COLOR_FMT.get(log_lvl, Fore.WHITE)}{log_lvl}"
+
+        if url := self.config["botlog_webhook"]:
+            if content := kw.pop("content", None):
+                cntnt = f"```ansi\n{now} - {log_lvl} - {Fore.WHITE}{content}\n```"
+                kw["content"] = cntnt
+
+            return await self.execute_webhook_from_url(url, **kw)

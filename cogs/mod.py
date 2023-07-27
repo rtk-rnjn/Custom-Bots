@@ -29,7 +29,7 @@ import logging
 import re
 import shlex
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Annotated
 
 import discord
 from discord.ext import commands
@@ -178,7 +178,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         self,
         ctx: Context,
         limit: int,
-        predicate: Callable[[discord.Message], Any],
+        predicate: Callable[[discord.Message], bool],
         *,
         before: int | None = None,
         after: int | None = None,
@@ -522,7 +522,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
     async def embeds(self, ctx: Context, search: int = 100) -> None:
         """Removes messages that have embeds in them."""
-        await self.purge_method(ctx, search, lambda e: len(e.embeds))
+        await self.purge_method(ctx, search, lambda e: bool(len(e.embeds)))
 
     @purge_command.command(name="regex")
     @commands.has_permissions(manage_messages=True)
@@ -541,14 +541,14 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
     async def files(self, ctx: Context, search: int = 100) -> None:
         """Removes messages that have attachments in them."""
-        await self.purge_method(ctx, search, lambda e: len(e.attachments))
+        await self.purge_method(ctx, search, lambda e: bool(len(e.attachments)))
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
     async def images(self, ctx: Context, search: int = 100) -> None:
         """Removes messages that have embeds or attachments."""
-        await self.purge_method(ctx, search, lambda e: len(e.embeds) or len(e.attachments))
+        await self.purge_method(ctx, search, lambda e: bool(len(e.embeds) or len(e.attachments)))
 
     @purge_command.command()
     @commands.has_permissions(manage_messages=True)

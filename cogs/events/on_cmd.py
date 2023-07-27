@@ -44,7 +44,7 @@ class OnCommand(Cog):
         log.debug("%s invoked by %s (%s) in %s (%s)", ctx.command, ctx.author, ctx.author.id, ctx.guild, ctx.guild.id)
 
         data = UpdateOne(
-            {"id": ctx.bot.user.id},
+            {"id": self.bot.user.id},
             {
                 "$inc": {
                     f"command.{ctx.command.qualified_name}": 1,
@@ -58,7 +58,7 @@ class OnCommand(Cog):
     async def on_command_completion(self, ctx: Context) -> None:
         """Log commands invoked by the bot."""
         data = UpdateOne(
-            {"id": ctx.bot.user.id},
+            {"id": self.bot.user.id},
             {
                 "$addToSet": {
                     "command_log": {

@@ -81,6 +81,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
     async def database_updater(self) -> None:
         """Update the ticket cache every 5 minutes."""
         log.info("Updating ticket cache... %s", self._ticket_cache)
+        await self.bot.log_bot_event(content="Updating ticket cache...")
         await self._save_ticket_cache()
 
     async def cog_load(self) -> None:
@@ -90,6 +91,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
     async def cog_unload(self) -> None:
         """Save the ticket cache when the cog is unloaded."""
         log.info("Saving ticket cache... %s", self._ticket_cache)
+        await self.bot.log_bot_event(content="Saving ticket cache...")
         await self._save_ticket_cache()
 
         if self.database_updater.is_running():  # pylint: disable=no-member

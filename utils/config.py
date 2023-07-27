@@ -28,6 +28,7 @@ import json
 import logging
 import os
 from typing import Any
+from collections.abc import Iterator
 
 import discord
 from pymongo import MongoClient
@@ -62,13 +63,13 @@ class Config:  # pylint: disable=too-many-instance-attributes
         self._id: int         = kwargs.get("id")        # type: ignore  # noqa
         self._name: str       = kwargs.get("name")      # type: ignore  # noqa
         self._token: str      = kwargs.get("token")     # type: ignore  # noqa
-        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore  # noqa
-        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore  # noqa
+        self._media: str      = kwargs.get("media")     # type: ignore  # noqa
         self._prefix: str     = kwargs.get("prefix")    # type: ignore  # noqa
         self._status: str     = kwargs.get("status")    # type: ignore  # noqa
         self._activity: str   = kwargs.get("activity")  # type: ignore  # noqa
-        self._media: str      = kwargs.get("media")     # type: ignore  # noqa
         self._guild_id: int   = kwargs.get("guild_id")  # type: ignore  # noqa
+        self._owner_id: int   = kwargs.get("owner_id")  # type: ignore  # noqa
+        self._cogs: list[str] = kwargs.get("cogs")      # type: ignore  # noqa
         # fmt: on
 
         self.__kw = kwargs
@@ -198,6 +199,9 @@ class Config:  # pylint: disable=too-many-instance-attributes
 
     def __delitem__(self, __name: str) -> None:
         del self.__kw[__name]
+
+    def __iter__(self) -> Iterator[Any]:  # noqa: ANN201
+        return iter(self.__kw.items())
 
     async def update_to_db(self) -> None:
         """Update the bot config to the database."""

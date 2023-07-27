@@ -128,7 +128,7 @@ class MemberID(commands.Converter):  # pylint: disable=too-few-public-methods
                 msg = f"{argument} is not a valid member or member ID."
                 raise commands.BadArgument(msg) from None
 
-            m: discord.Member | discord.User | None = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
+            m: discord.Member | None = await ctx.bot.get_or_fetch_member(ctx.guild, member_id)
             if m is None:
                 # hackban case
                 return type(  # type: ignore

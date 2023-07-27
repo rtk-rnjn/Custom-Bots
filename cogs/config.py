@@ -48,8 +48,14 @@ class Config(Cog):  # pylint: disable=too-few-public-methods
         self.bot.config.set_prefix(prefix)
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
         await self.bot.mongo.customBots.mainConfigCollection.update_one(
-            {"id": self.bot.config.id},
-            {"$set": {"prefix": prefix}},
+            {
+                "id": self.bot.config.id,
+            },
+            {
+                "$set": {
+                    "prefix": prefix,
+                },
+            },
         )
 
     @_set.command(name="suggestion", aliases=["suggest"])
@@ -74,6 +80,23 @@ class Config(Cog):  # pylint: disable=too-few-public-methods
 
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
 
+    @_set.command(name="botlog", aliases=["bot-log"])
+    @commands.has_permissions(manage_guild=True)
+    @commands.bot_has_guild_permissions(manage_webhooks=True)
+    async def _botlog(self, ctx: Context, channel: discord.TextChannel | None = None) -> None:
+        """To set the bot's botlog channel."""
+        ch = channel or ctx.channel
+
+        assert isinstance(ch, discord.TextChannel)
+        webhook = await ch.create_webhook(name="BotLog", reason="BotLog webhook")
+
+        self.bot.config["botlog_channel"] = ch.id
+        self.bot.config["botlog_webhook"] = webhook.url
+
+        await self.bot.config.update_to_db()
+
+        await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+
     @commands.group(name="unset", invoke_without_command=True)
     async def _unset(self, ctx: Context) -> None:
         """To unset the bot's configuration."""
@@ -94,6 +117,17 @@ class Config(Cog):  # pylint: disable=too-few-public-methods
     async def _unmodlog(self, ctx: Context) -> None:
         """To unset the bot's modlog channel."""
         self.bot.config.set_modlog_channel(None)
+        await self.bot.config.update_to_db()
+
+        await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+
+    @_unset.command(name="botlog", aliases=["bot-log"])
+    @commands.has_permissions(manage_guild=True)
+    async def _unbotlog(self, ctx: Context) -> None:
+        """To unset the bot's botlog channel."""
+        self.bot.config["botlog_channel"] = None
+        self.bot.config["botlog_webhook"] = None
+
         await self.bot.config.update_to_db()
 
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")

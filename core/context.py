@@ -21,21 +21,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import discord
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    from .bot import Bot
+else:
+    from discord.ext.commands import Bot
 
-class Context(commands.Context[commands.Bot]):
+
+BotT = TypeVar("BotT", bound="Bot")
+
+
+class Context(commands.Context[BotT]):
     """A custom context class for the bot."""
 
-    if TYPE_CHECKING:
-        from .bot import Bot  # pylint: disable=import-outside-toplevel
-
-    bot: Bot
+    bot: BotT | Bot
     author: discord.Member
     guild: discord.Guild
     channel: discord.abc.GuildChannel

@@ -109,8 +109,10 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             "ar_msg": {"$exists": True},
         }
         log.info("fetching autoresponder messages...")
+        await self.bot.log_bot_event(content="Fetching autoresponder messages...")
         data = await self.bot.main_config.find_one(query, {"ar_msg": 1})
         log.info("fetched autoresponder messages with data %s", data)
+        await self.bot.log_bot_event(content=f"Fetched autoresponder messages with data {data}")
         if data is None:
             return
 
@@ -127,8 +129,10 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
         query = {"id": self.bot.config.id}
         update = {"$set": {"ar_msg": self._ar_message_cache}}
         log.info("saving autoresponder messages... %s", update)
+        await self.bot.log_bot_event(content=f"Saving autoresponder messages... {update}")
         await self.bot.main_config.update_one(query, update, upsert=True)
         log.info("saved autoresponder messages")
+        await self.bot.log_bot_event(content="Saved autoresponder messages")
 
     @commands.group(name="autoresponder", aliases=["ar"], invoke_without_command=True)
     @commands.has_permissions(manage_guild=True)

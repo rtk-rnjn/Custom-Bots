@@ -135,10 +135,10 @@ class Giveaway(Cog):
         CHANNEL = CHANNEL or ctx.channel
         msg = await CHANNEL.send(embed=embed)  # type: ignore
         await msg.add_reaction("\N{PARTY POPPER}")
-        ctx.bot.message_cache[msg.id] = msg
+        self.bot.message_cache[msg.id] = msg
         main_post = await self._create_giveaway_post(message=msg, **payload)  # type: ignore  # flake8: noqa  # pylint: disable=missing-kwoa
 
-        await ctx.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
+        await self.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
         await ctx.reply(embed=discord.Embed(description="Giveaway has been created!"))
 
         log.debug("giveaway created with payload %s", payload)
@@ -147,6 +147,7 @@ class Giveaway(Cog):
     async def end_giveaway(self, bot: Bot, **kw: Any) -> list[int]:
         """End a giveaway"""
         log.info("ending giveaway with payload %s", kw)
+        await bot.log_bot_event(content=f"Ending giveaway with payload {kw}")
         channel: discord.TextChannel = await bot.getch(bot.get_channel, bot.fetch_channel, kw.get("giveaway_channel"))
 
         msg: discord.Message = await bot.get_or_fetch_message(channel, kw["message_id"])  # type: ignore
@@ -158,6 +159,7 @@ class Giveaway(Cog):
         reactors = kw["reactors"]
         if not reactors:
             log.info("no reactors found, fetching reactors from message")
+            await bot.log_bot_event(content="No reactors found, fetching reactors from message")
             for reaction in msg.reactions:
                 if str(reaction.emoji) == "\N{PARTY POPPER}":
                     reactors: list[int] = [user.id async for user in reaction.users()]
@@ -244,7 +246,7 @@ class Giveaway(Cog):
         endtime: float,
         required_role: int | None = None,
         required_guild: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> dict:
         post_extra = {
             "message_id": message.id,
             "author_id": message.author.id,
@@ -293,7 +295,7 @@ class Giveaway(Cog):
         await msg.add_reaction("\N{PARTY POPPER}")
         main_post = await self._create_giveaway_post(message=msg, **payload)  # flake8: noqa
 
-        await ctx.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
+        await self.bot.giveaways.insert_one({**main_post["extra"]["main"], "reactors": [], "status": "ONGOING"})
         return main_post
 
     @commands.command(name="gstart", aliases=["giveaway"])
