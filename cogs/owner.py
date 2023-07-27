@@ -166,15 +166,19 @@ class Owner(Cog):
         assert guild is not None
 
         async for entry in guild.audit_logs(**kwargs):
-            humanize = arrow.get(entry.created_at).humanize()
+            humanize = arrow.get(entry.created_at, tzinfo="+00:00").humanize()
             dt = entry.created_at.strftime("%Y-%m-%d %H:%M:%S")
 
             action_name = entry.action.name.replace("_", " ").title()
-            target = (
-                f"{entry.target} ({Fore.MAGENTA}{entry.target.id}{Fore.WHITE})"
-                if entry.target
-                else f"Unknown Target ({Fore.MAGENTA}0{Fore.WHITE})"
-            )
+            if isinstance(entry.target, discord.Member | discord.User):
+                target = f"`{entry.target}` ({Fore.MAGENTA}{entry.target.id}{Fore.WHITE})"
+            elif isinstance(entry.target, discord.Object):
+                target = f"`Deleted Object` ({Fore.MAGENTA}{entry.target.id}{Fore.WHITE})"
+            elif entry.target is None:
+                target = f"`Unknown Target` ({Fore.MAGENTA}0{Fore.WHITE})"
+            else:
+                target = f"`{entry.target.__class__.__name__}` ({Fore.MAGENTA}{entry.target.id}{Fore.WHITE})"
+
             user = (
                 f"{entry.user.display_name} ({Fore.MAGENTA}{entry.user.id}{Fore.WHITE})"
                 if entry.user
@@ -189,7 +193,7 @@ class Owner(Cog):
                     """,
                 ),
             )
-            page.add_line(f"{Fore.WHITE}-" * 20)
+            page.add_line("\n" + f"{Fore.BLACK}-" * 40 + "\n")
 
         interface = PaginatorInterface(ctx.bot, page, owner=ctx.author)
         await interface.send_to(ctx)
