@@ -526,14 +526,22 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             self.__universal_db_writer = []
 
     async def execute_webhook_from_url(
-        self, webhook_url: str, *, error_supperssor: tuple | None = None, **kwargs: Any,  # noqa: ANN401
+        self,
+        webhook_url: str,
+        *,
+        error_supperssor: tuple | None = None,
+        **kwargs: Any,  # noqa: ANN401
     ) -> discord.WebhookMessage | None:
         """Execute a webhook from a webhook url."""
         webhook = discord.Webhook.from_url(webhook_url, session=self.session, client=self, bot_token=self.config.token)
         return await self.execute_webhook(webhook, error_supperssor=error_supperssor, **kwargs)
 
     async def execute_webhook(
-        self, webhook: discord.Webhook, *, error_supperssor: tuple | None = None, **kwargs: Any,  # noqa: ANN401
+        self,
+        webhook: discord.Webhook,
+        *,
+        error_supperssor: tuple | None = None,
+        **kwargs: Any,  # noqa: ANN401
     ) -> discord.WebhookMessage | None:
         """Execute a webhook."""
         error_supperssor = error_supperssor or (discord.NotFound, discord.Forbidden)

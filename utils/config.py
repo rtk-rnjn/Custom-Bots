@@ -27,8 +27,8 @@ import contextlib
 import json
 import logging
 import os
-from typing import Any
 from collections.abc import Iterator
+from typing import Any
 
 import discord
 from pymongo import MongoClient

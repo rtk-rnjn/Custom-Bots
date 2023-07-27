@@ -21,5 +21,5 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .views import *  # noqa: F401, F403  # pylint: disable=wildcard-import
 from .flags import *  # noqa: F401, F403  # pylint: disable=wildcard-import
+from .views import *  # noqa: F401, F403  # pylint: disable=wildcard-import

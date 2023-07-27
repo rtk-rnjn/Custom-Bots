@@ -134,7 +134,6 @@ class Owner(Cog):
         - `--oldest-first` or `-o` to get the oldest audit logs first.
         - `--guild` or `-g` to get audit logs of a specific guild.
         """
-
         page = commands.Paginator(prefix="```ansi", max_size=1985)
 
         guild = flags.guild or ctx.guild
@@ -151,7 +150,8 @@ class Owner(Cog):
                 kwargs["action"] = getattr(discord.AuditLogAction, close_match[0])  # type: ignore
 
             else:
-                raise commands.BadArgument(f"Action {flags.action} not found.")
+                msg = f"Action {flags.action} not found."
+                raise commands.BadArgument(msg)
 
         if flags.before:
             kwargs["before"] = flags.before.dt
@@ -185,8 +185,8 @@ class Owner(Cog):
                     {Fore.CYAN}{dt} ({humanize}) {Fore.WHITE}| {Fore.BLUE}{action_name} {Fore.WHITE}({Fore.MAGENTA}{entry.id}{Fore.WHITE})
                     {Fore.GREEN}Moderator: {Fore.WHITE}{user}
                     {Fore.GREEN}Target: {Fore.WHITE}{target}
-                    """
-                )
+                    """,
+                ),
             )
             page.add_line(f"{Fore.WHITE}-" * 20)
 
