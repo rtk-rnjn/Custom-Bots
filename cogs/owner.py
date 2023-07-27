@@ -147,7 +147,7 @@ class Owner(Cog):
         kwargs["limit"] = max(flags.limit or 0, 100)
         if flags.action:
             _actions = [ele for ele in dir(discord.AuditLogAction) if not ele.startswith("_")]
-            if close_match := difflib.get_close_matches(_actions, flags.action, n=1, cutoff=0.5):
+            if close_match := difflib.get_close_matches(flags.action, _actions, n=1, cutoff=0.5):
                 kwargs["action"] = getattr(discord.AuditLogAction, close_match[0])  # type: ignore
 
             else:
