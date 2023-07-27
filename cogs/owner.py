@@ -23,11 +23,17 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import difflib
+import inspect
 import logging
 from typing import Literal
 
+import arrow
 import discord
+from cog_utils import AuditFlag
+from colorama import Fore
 from discord.ext import commands
+from jishaku.paginators import PaginatorInterface
 
 from core import Bot, Cog, Context  # pylint: disable=import-error
 
@@ -99,6 +105,93 @@ class Owner(Cog):
             {"id": self.bot.config.id},
             {"$set": {"prefix": prefix}},
         )
+
+    @commands.command()
+    async def shutdown(self, ctx: Context) -> None:
+        """Shutdown the bot."""
+        await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+        await self.bot.log_bot_event(content="Bot shutdown")
+        await self.bot.close()
+
+    @commands.command()
+    async def leave(self, ctx: Context) -> None:
+        """Make the bot leave the server."""
+        await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
+        await self.bot.log_bot_event(content="Bot left the server")
+        await ctx.guild.leave()
+
+    @commands.command(aliases=["audit-log", "auditlogs", "audit-logs"])
+    @commands.bot_has_guild_permissions(view_audit_log=True)
+    async def auditlog(self, ctx: Context, *, flags: AuditFlag) -> None:
+        """To get the audit log of the server, in nice format.
+
+        **Flags:**
+        - `--user` or `-u` to get audit logs of a specific user.
+        - `--action` or `-a` to get audit logs of a specific action.
+        - `--before` or `-b` to get audit logs before a specific date.
+        - `--after` or `-a` to get audit logs after a specific date.
+        - `--limit` or `-l` to limit the number of audit logs.
+        - `--oldest-first` or `-o` to get the oldest audit logs first.
+        - `--guild` or `-g` to get audit logs of a specific guild.
+        """
+
+        page = commands.Paginator(prefix="```ansi", max_size=1985)
+
+        guild = flags.guild or ctx.guild
+
+        kwargs = {}
+
+        if flags.user:
+            kwargs["user"] = flags.user
+
+        kwargs["limit"] = max(flags.limit or 0, 100)
+        if flags.action:
+            _actions = [ele for ele in dir(discord.AuditLogAction) if not ele.startswith("_")]
+            if close_match := difflib.get_close_matches(_actions, flags.action, n=1, cutoff=0.5):
+                kwargs["action"] = getattr(discord.AuditLogAction, close_match[0])  # type: ignore
+
+            else:
+                raise commands.BadArgument(f"Action {flags.action} not found.")
+
+        if flags.before:
+            kwargs["before"] = flags.before.dt
+
+        if flags.after:
+            kwargs["after"] = flags.after.dt
+
+        if flags.oldest_first:
+            kwargs["oldest_first"] = flags.oldest_first
+
+        assert guild is not None
+
+        async for entry in guild.audit_logs(**kwargs):
+            humanize = arrow.get(entry.created_at).humanize()
+            dt = entry.created_at.strftime("%Y-%m-%d %H:%M:%S")
+
+            action_name = entry.action.name.replace("_", " ").title()
+            target = (
+                f"{entry.target} ({Fore.MAGENTA}{entry.target.id}{Fore.WHITE})"
+                if entry.target
+                else f"Unknown Target ({Fore.MAGENTA}0{Fore.WHITE})"
+            )
+            user = (
+                f"{entry.user.display_name} ({Fore.MAGENTA}{entry.user.id}{Fore.WHITE})"
+                if entry.user
+                else f"Unknown User ({Fore.MAGENTA}0{Fore.WHITE})"
+            )
+            page.add_line(
+                inspect.cleandoc(
+                    f"""
+                    {Fore.CYAN}{dt} ({humanize}) {Fore.WHITE}| {Fore.BLUE}{action_name} {Fore.WHITE}({Fore.MAGENTA}{entry.id}{Fore.WHITE})
+                    {Fore.GREEN}Moderator: {Fore.WHITE}{user}
+                    {Fore.GREEN}Target: {Fore.WHITE}{target}
+                    """
+                )
+            )
+            page.add_line(f"{Fore.WHITE}-" * 20)
+
+        interface = PaginatorInterface(ctx.bot, page, owner=ctx.author)
+        await interface.send_to(ctx)
 
 
 async def setup(bot: Bot) -> None:

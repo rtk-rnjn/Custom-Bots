@@ -80,8 +80,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
     @tasks.loop(minutes=5)
     async def database_updater(self) -> None:
         """Update the ticket cache every 5 minutes."""
-        log.info("Updating ticket cache... %s", self._ticket_cache)
-        await self.bot.log_bot_event(content="Updating ticket cache...")
+        log.debug("Updating ticket cache... %s", self._ticket_cache)
         await self._save_ticket_cache()
 
     async def cog_load(self) -> None:

@@ -1,3 +1,4 @@
+arrow
 discord.py
 jishaku
 python-dotenv
