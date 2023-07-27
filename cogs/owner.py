@@ -180,16 +180,16 @@ class Owner(Cog):
                 target = f"`{entry.target.__class__.__name__}` ({Fore.MAGENTA}{entry.target.id}{Fore.WHITE})"
 
             user = (
-                f"{entry.user.display_name} ({Fore.MAGENTA}{entry.user.id}{Fore.WHITE})"
+                f"`{entry.user}` ({Fore.MAGENTA}{entry.user.id}{Fore.WHITE})"
                 if entry.user
-                else f"Unknown User ({Fore.MAGENTA}0{Fore.WHITE})"
+                else f"`Unknown User` ({Fore.MAGENTA}0{Fore.WHITE})"
             )
             page.add_line(
                 inspect.cleandoc(
                     f"""
                     {Fore.CYAN}{dt} ({humanize}) {Fore.WHITE}| {Fore.BLUE}{action_name} {Fore.WHITE}({Fore.MAGENTA}{entry.id}{Fore.WHITE})
                     {Fore.GREEN}Moderator: {Fore.WHITE}{user}
-                    {Fore.GREEN}Target: {Fore.WHITE}{target}
+                    {Fore.GREEN}Target   : {Fore.WHITE}{target}
                     """,
                 ),
             )
