@@ -9,3 +9,4 @@ typing_extensions
 pillow
 motor
 psutil
+pymongo

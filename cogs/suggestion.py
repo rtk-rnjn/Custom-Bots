@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import Optional, Union
 
 import discord
 from discord.ext import commands
@@ -64,7 +63,7 @@ class Suggestions(Cog):
         *,
         guild: discord.Guild,
         channel: discord.TextChannel | None = None,
-    ) -> Optional[discord.Message]:
+    ) -> discord.Message | None:
         """Get or fetch a message from the cache or API."""
         if guild.id != self.bot.config.guild_id:
             return
@@ -111,7 +110,7 @@ class Suggestions(Cog):
         self,
         msg: discord.Message,
         *,
-        emoji: Union[discord.Emoji, discord.PartialEmoji, str],
+        emoji: discord.Emoji | discord.PartialEmoji | str,
     ) -> int:
         for reaction in msg.reactions:
             if str(reaction.emoji) == str(emoji):
@@ -121,13 +120,13 @@ class Suggestions(Cog):
 
     async def __suggest(
         self,
-        content: Optional[str] = None,
+        content: str | None = None,
         *,
         embed: discord.Embed,
         ctx: Context,
-        file: Optional[discord.File] = None,
+        file: discord.File | None = None,
     ) -> discord.Message:
-        channel: Optional[discord.TextChannel] = await self.__fetch_suggestion_channel(ctx.guild)
+        channel: discord.TextChannel | None = await self.__fetch_suggestion_channel(ctx.guild)
         if channel is None:
             msg = f"{ctx.author.mention} error fetching suggestion channel"
             raise commands.BadArgument(msg)
@@ -167,7 +166,7 @@ class Suggestions(Cog):
     async def __notify_user(
         self,
         ctx: Context,
-        user: Optional[discord.Member] = None,
+        user: discord.Member | None = None,
         *,
         message: discord.Message,
         remark: str,
@@ -204,7 +203,7 @@ class Suggestions(Cog):
                 )
             )
 
-            file: Optional[discord.File] = None
+            file: discord.File | None = None
 
             if ctx.message.attachments and (
                 ctx.message.attachments[0].url.lower().endswith(("png", "jpeg", "jpg", "gif", "webp"))
@@ -231,7 +230,7 @@ class Suggestions(Cog):
     @commands.bot_has_permissions(read_message_history=True)
     async def suggest_delete(self, ctx: Context, *, ID: int) -> None:  # noqa: N803
         """To delete the suggestion you suggested."""
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
+        msg: discord.Message | None = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
@@ -258,7 +257,7 @@ class Suggestions(Cog):
     @commands.cooldown(1, 60, commands.BucketType.member)
     async def suggest_resolved(self, ctx: Context, *, thread_id: int) -> None:
         """To mark the suggestion as resolved."""
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(thread_id, guild=ctx.guild)
+        msg: discord.Message | None = await self.get_or_fetch_message(thread_id, guild=ctx.guild)
         if not msg:
             await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{thread_id}`. Probably already deleted, or `{thread_id}` is invalid",
@@ -290,7 +289,7 @@ class Suggestions(Cog):
     @commands.check_any(commands.has_permissions(manage_messages=True))
     async def add_note(self, ctx: Context, ID: int, *, remark: str) -> None:  # noqa: N803
         """To add a note in suggestion embed."""
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
+        msg: discord.Message | None = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
@@ -322,7 +321,7 @@ class Suggestions(Cog):
         ID: int,  # noqa: N803
     ) -> None:
         """To remove all kind of notes and extra reaction from suggestion embed."""
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
+        msg: discord.Message | None = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
@@ -353,7 +352,7 @@ class Suggestions(Cog):
         - APPROVED
         - DUPLICATE
         """
-        msg: Optional[discord.Message] = await self.get_or_fetch_message(ID, guild=ctx.guild)
+        msg: discord.Message | None = await self.get_or_fetch_message(ID, guild=ctx.guild)
         if not msg:
             await ctx.reply(
                 f"{ctx.author.mention} Can not find message of ID `{ID}`. Probably already deleted, or `{ID}` is invalid",
@@ -366,7 +365,7 @@ class Suggestions(Cog):
 
         flag = flag.upper()
         try:
-            payload: dict[str, Union[int, str]] = OTHER_REACTION[flag]
+            payload: dict[str, int | str] = OTHER_REACTION[flag]
         except KeyError:
             await ctx.reply(f"{ctx.author.mention} Invalid Flag")
             return
@@ -381,7 +380,7 @@ class Suggestions(Cog):
             await ctx.reply(f"{ctx.author.mention} Can not find user ID of the suggestion. Probably already deleted")
             return
 
-        user: Optional[discord.Member] = await self.bot.get_or_fetch_member(ctx.guild, user_id)
+        user: discord.Member | None = await self.bot.get_or_fetch_member(ctx.guild, user_id)
         await self.__notify_user(ctx, user, message=msg, remark="")
 
         content = f"Flagged: {flag} | {payload['emoji']}"
@@ -450,7 +449,7 @@ class Suggestions(Cog):
         if str(payload.emoji) == "\N{DOWNWARDS BLACK ARROW}":
             self.message[payload.message_id]["message_downvote"] -= 1
 
-    async def __parse_mod_action(self, message: discord.Message) -> Optional[bool]:
+    async def __parse_mod_action(self, message: discord.Message) -> bool | None:
         assert isinstance(message.author, discord.Member)
 
         if not self.__is_mod(message.author):

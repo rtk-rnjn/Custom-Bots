@@ -26,7 +26,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Optional
 
 import discord
 from discord.ext import commands, tasks
@@ -315,7 +314,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
         *,
         ctx: Context,
         check: Callable[[discord.Message], bool],
-        convertor: Optional[commands.Converter] = None,
+        convertor: commands.Converter | None = None,
     ) -> str | discord.Object | None:
         try:
             await ctx.reply(embed=discord.Embed(description=msg))
@@ -394,7 +393,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
 
     @ticket_setup.command(name="pingrole", aliases=["ping"])
     @commands.has_permissions(manage_guild=True)
-    async def ticket_setup_pingrole(self, ctx: Context, *, role: Optional[RoleID] = None) -> None:
+    async def ticket_setup_pingrole(self, ctx: Context, *, role: RoleID | None = None) -> None:
         """Set the ping role for tickets.
 
         Invoker must have `Manage Server` permissions.
@@ -415,7 +414,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
 
     @ticket_setup.command(name="category", aliases=["cat"])
     @commands.has_permissions(manage_guild=True)
-    async def ticket_setup_category(self, ctx: Context, *, category: Optional[discord.CategoryChannel] = None) -> None:
+    async def ticket_setup_category(self, ctx: Context, *, category: discord.CategoryChannel | None = None) -> None:
         """Set the ticket category.
 
         Invoker must have `Manage Server` permissions.
@@ -435,7 +434,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
 
     @ticket_setup.command(name="message", aliases=["msg"])
     @commands.has_permissions(manage_guild=True)
-    async def ticket_setup_message(self, ctx: Context, *, message: Optional[MessageID] = None) -> None:
+    async def ticket_setup_message(self, ctx: Context, *, message: MessageID | None = None) -> None:
         """Set the ticket message.
 
         Invoker must have `Manage Server` permissions.
@@ -457,7 +456,7 @@ class Tickets(Cog):  # pylint: disable=too-many-public-methods
 
     @ticket_setup.command(name="logchannel", aliases=["log"])
     @commands.has_permissions(manage_guild=True)
-    async def ticket_setup_logchannel(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:
+    async def ticket_setup_logchannel(self, ctx: Context, *, channel: discord.TextChannel | None = None) -> None:
         """Set the ticket log channel.
 
         Invoker must have `Manage Server` permissions.

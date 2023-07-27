@@ -203,7 +203,12 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
         members = await guild.query_members(limit=1, user_ids=[member_id], cache=True)
         return members[0] if members else None
 
-    async def getch(self, get_function: Callable, fetch_function: Callable[..., Awaitable], entity: int) -> Any:  # noqa: ANN401
+    async def getch(
+        self,
+        get_function: Callable,
+        fetch_function: Callable[..., Awaitable],
+        entity: int,
+    ) -> Any:  # noqa: ANN401
         """Get an entity from cache or fetch if not found."""
         entity = get_function(entity)
         if entity is not None:
@@ -265,6 +270,9 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             return await ctx.reply(f"Bot is missing permissions: `{fmt}`")
 
         if isinstance(error, commands.MissingPermissions):
+            if await self.is_owner(ctx.author):
+                return await ctx.reinvoke()
+
             missing = [perm.replace("_", " ").replace("guild", "server").title() for perm in error.missing_permissions]
             if len(missing) > 2:
                 fmt = f'{", ".join(missing[:-1])}, and {missing[-1]}'
@@ -273,6 +281,9 @@ class Bot(commands.Bot):  # pylint: disable=too-many-instance-attributes
             return await ctx.reply(f"You need the following permission(s) to the run the command: `{fmt}`")
 
         if isinstance(error, commands.CommandOnCooldown):
+            if await self.is_owner(ctx.author):
+                return await ctx.reinvoke()
+
             now = discord.utils.utcnow() + datetime.timedelta(seconds=error.retry_after)
             discord_time = discord.utils.format_dt(now, "R")
             return await ctx.reply(f"This command is on cooldown. Try again in {discord_time}")

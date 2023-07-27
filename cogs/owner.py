@@ -24,7 +24,7 @@ SOFTWARE.
 from __future__ import annotations
 
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 import discord
 from discord.ext import commands
@@ -52,7 +52,7 @@ class Owner(Cog):
     async def playing(
         self,
         ctx: Context,
-        status: Optional[Literal["online", "dnd", "idle"]] = "dnd",
+        status: Literal["online", "dnd", "idle"] | None = "dnd",
         *,
         media: str,
     ) -> None:

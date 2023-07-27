@@ -26,7 +26,6 @@ from __future__ import annotations
 import logging
 import random
 import re
-from typing import Union
 
 import discord
 from discord.ext import commands, tasks
@@ -76,6 +75,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
             .replace("{author_mention}", message.author.mention)
             .replace("{author_name}", message.author.name)
             .replace("{author_display_name}", message.author.display_name)
+            .replace("{author_display_avatar}", message.author.display_avatar.url)
             .replace("{author_id}", str(message.author.id))
             # channel
             .replace("{channel}", str(message.channel))
@@ -149,6 +149,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
                 "- `{author_mention}` - The author's mention.\n"
                 "- `{author_name}   ` - The author's name.\n"
                 "- `{author_display_name}` - The author's display name.\n"
+                "- `{author_display_avatar}` - The author's display avatar url\n"
                 "- `{author_id}     ` - The author's ID.\n"
                 "- `{channel}       ` - The channel's full name.\n"
                 "- `{channel_mention}` - The channel's mention.\n"
@@ -312,7 +313,7 @@ class Autoresponder(Cog):  # pylint: disable=too-many-public-methods
 
     @autoresponder_reaction.command(name="add", aliases=["create"])
     @commands.has_permissions(manage_guild=True)
-    async def autoresponder_reaction_add(self, ctx: Context, trigger: str, *, reaction: Union[str, discord.Emoji]) -> None:
+    async def autoresponder_reaction_add(self, ctx: Context, trigger: str, *, reaction: str | discord.Emoji) -> None:
         """Add a new autoresponder reaction.
 
         The trigger can be a regex pattern or a normal string.

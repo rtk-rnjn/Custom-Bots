@@ -23,8 +23,6 @@ SOFTWARE.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import discord
 from discord.ext import commands
 
@@ -56,7 +54,7 @@ class Config(Cog):  # pylint: disable=too-few-public-methods
 
     @_set.command(name="suggestion", aliases=["suggest"])
     @commands.has_permissions(manage_guild=True)
-    async def _suggestion(self, ctx: Context, channel: Optional[discord.TextChannel] = None) -> None:
+    async def _suggestion(self, ctx: Context, channel: discord.TextChannel | None = None) -> None:
         """To set the bot's suggestion channel."""
         ch = channel or ctx.channel
 
@@ -67,7 +65,7 @@ class Config(Cog):  # pylint: disable=too-few-public-methods
 
     @_set.command(name="modlog")
     @commands.has_permissions(manage_guild=True)
-    async def _modlog(self, ctx: Context, channel: Optional[discord.TextChannel] = None) -> None:
+    async def _modlog(self, ctx: Context, channel: discord.TextChannel | None = None) -> None:
         """To set the bot's modlog channel."""
         ch = channel or ctx.channel
 

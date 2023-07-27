@@ -29,7 +29,7 @@ import logging
 import re
 import shlex
 from collections.abc import Callable
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any
 
 import discord
 from discord.ext import commands
@@ -225,7 +225,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: discord.Member | discord.User,
         guild: discord.Guild,
         duration: datetime.datetime,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> bool:
         """Timeout a user from the server."""
         member = guild.get_member(user.id)
@@ -256,7 +256,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         *,
         user: discord.Member | discord.User,
         guild: discord.Guild,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> bool:
         """Unmute a user from the server."""
         member = guild.get_member(user.id)
@@ -281,7 +281,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: discord.Member | discord.User,
         guild: discord.Guild,
         role: discord.Role,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> bool:
         """Add a role to a member."""
         member = guild.get_member(user.id)
@@ -303,7 +303,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: discord.Member | discord.User,
         guild: discord.Guild,
         role: discord.Role,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> bool:
         """Remove a role from a member."""
         member = guild.get_member(user.id)
@@ -327,7 +327,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         ctx: Context,
         user: Annotated[discord.Member, MemberID],
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Kick a user from the server.
 
@@ -361,7 +361,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         ctx: Context,
         user: Annotated[discord.Member, MemberID],
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Ban a user from the server.
 
@@ -393,9 +393,9 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     async def unban_command(
         self,
         ctx: Context,
-        user: Annotated[Union[discord.Member, discord.User], BannedMember],
+        user: Annotated[discord.Member | discord.User, BannedMember],
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Unban a user from the server.
 
@@ -422,9 +422,9 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     async def lock_command(
         self,
         ctx: Context,
-        channel: Optional[Union[discord.TextChannel, discord.VoiceChannel]] = None,
+        channel: discord.TextChannel | discord.VoiceChannel | None = None,
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Lock the text channel or voice channel the command is invoked in or the channel specified.
 
@@ -459,9 +459,9 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     async def unlock_command(
         self,
         ctx: Context,
-        channel: Optional[Union[discord.TextChannel, discord.VoiceChannel]] = None,
+        channel: discord.TextChannel | discord.VoiceChannel | None = None,
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Unlock the text channel or voice channel the command is invoked in or the channel specified.
 
@@ -493,7 +493,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @commands.group(name="purge", invoke_without_command=True)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def purge_command(self, ctx: Context, limit: Optional[int] = 100) -> None:
+    async def purge_command(self, ctx: Context, limit: int | None = 100) -> None:
         """Purge messages from a channel.
 
         Both the bot and the user invoking the command must have the `Manage Messages` permission.
@@ -527,7 +527,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command(name="regex")
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _regex(self, ctx: Context, pattern: Optional[str] = None, search: int = 100) -> None:
+    async def _regex(self, ctx: Context, pattern: str | None = None, search: int = 100) -> None:
         """Removed messages that matches the regex pattern."""
         pattern = pattern or r".*"
 
@@ -573,7 +573,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
     @purge_command.command(name="bot", aliases=["bots"])
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(read_message_history=True, manage_messages=True)
-    async def _bot(self, ctx: Context, prefix: Optional[str] = None, search: int = 100) -> None:
+    async def _bot(self, ctx: Context, prefix: str | None = None, search: int = 100) -> None:
         """Removes a bot user's messages and messages with their optional prefix."""
 
         def predicate(m: discord.Message) -> bool:
@@ -745,7 +745,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: Annotated[discord.Member, MemberID],
         duration: ShortTime,
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Timeout a user for a specified duration.
 
@@ -782,7 +782,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         ctx: Context,
         user: Annotated[discord.Member, MemberID],
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Untimeout a user.
 
@@ -819,7 +819,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: Annotated[discord.Member, MemberID],
         role: Annotated[discord.Role, RoleID],
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Add a role to a user.
 
@@ -860,7 +860,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         user: Annotated[discord.Member, MemberID],
         role: Annotated[discord.Role, RoleID],
         *,
-        reason: Annotated[Optional[str], ActionReason] = None,
+        reason: Annotated[str | None, ActionReason] = None,
     ) -> None:
         """Remove a role from a user.
 

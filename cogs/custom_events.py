@@ -94,7 +94,14 @@ class EventCustom(Cog):
         if name == "GIVEAWAY_END" and (main := extra.get("main")):
             await self._parse_giveaway(**main)
 
-    async def _parse_giveaway(self, *, message_id: int, giveaway_channel: int, guild_id: int, **kw: Any) -> None:  # noqa: ANN401
+    async def _parse_giveaway(
+        self,
+        *,
+        message_id: int,
+        giveaway_channel: int,
+        guild_id: int,
+        **kw: str,
+    ) -> None:
         """Helper function to parse giveaway."""
         data: dict[str, Any] = await self.bot.giveaways.find_one(
             {

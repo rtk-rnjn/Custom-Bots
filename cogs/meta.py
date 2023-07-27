@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from typing import Optional
 
 import discord
 from discord.ext import commands
@@ -57,7 +56,7 @@ class Meta(Cog):
 
     @commands.command(name="userinfo", aliases=["memberinfo", "ui", "mi"])
     @commands.bot_has_permissions(embed_links=True)
-    async def user_info(self, ctx: Context, *, member: Optional[discord.Member] = None) -> None:
+    async def user_info(self, ctx: Context, *, member: discord.Member | None = None) -> None:
         """Get the basic stats about the member in the server."""
         target = member or ctx.author  # type: discord.Member  # type: ignore
         roles = list(target.roles)
@@ -153,7 +152,7 @@ class Meta(Cog):
         await ctx.reply(embed=embed)
 
     @commands.command(name="avatar", aliases=["av"])
-    async def avatar(self, ctx: Context, *, member: Optional[discord.Member] = None) -> None:
+    async def avatar(self, ctx: Context, *, member: discord.Member | None = None) -> None:
         """Returns the avatar of the user."""
         target = member or ctx.author
         embed = discord.Embed(

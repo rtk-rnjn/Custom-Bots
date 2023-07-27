@@ -24,7 +24,6 @@ SOFTWARE.
 from __future__ import annotations
 
 import re
-import typing
 from contextlib import suppress
 
 import discord
@@ -46,7 +45,7 @@ class EmbedSend(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction) -> None:
         """Handle the interaction."""
         try:
-            m: typing.Optional[discord.Message] = await self.channel.send(embed=self.view.embed)
+            m: discord.Message | None = await self.channel.send(embed=self.view.embed)
 
         except Exception as e:  # pylint: disable=broad-except
             await interaction.response.send_message(f"An error occured: {e}", ephemeral=True)
@@ -119,7 +118,7 @@ class BotView(discord.ui.View):
     message: discord.Message
     custom_id = None
 
-    def __init__(self, ctx: Context, *, timeout: typing.Optional[float] = 30) -> None:
+    def __init__(self, ctx: Context, *, timeout: float | None = 30) -> None:
         super().__init__(timeout=timeout)
         self.ctx = ctx
         self.bot = ctx.bot
@@ -374,7 +373,7 @@ class EmbedBuilder(BotView):
         """Return the embed as a dict."""
         return dict(self.embed.to_dict())
 
-    async def refresh_view(self, to_del: typing.Optional[discord.Message] = None) -> None:
+    async def refresh_view(self, to_del: discord.Message | None = None) -> None:
         """Refresh the embed builder."""
         if to_del is not None:
             await to_del.delete(delay=0)

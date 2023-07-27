@@ -139,3 +139,4 @@ venv
 tests/
 temp/*
 .ruff_cache/
+.idea

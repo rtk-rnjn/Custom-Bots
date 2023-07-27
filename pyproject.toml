@@ -4,7 +4,7 @@ line-length = 125
 [tool.ruff]
 line-length = 150
 select = ['ANN', 'ASYNC', 'B', 'C', 'COM', 'D', 'E', 'EM', 'F', 'FA', 'G', 'N', 'Q', 'S', 'T10', 'UP', 'W']
-ignore = ['ANN002', 'ANN003', 'ANN101', 'ANN102', 'D105', 'D107', 'D401', 'S101', 'UP007']
+ignore = ['ANN002', 'ANN003', 'ANN101', 'ANN102', 'D105', 'D107', 'D401', 'S101']
 
 [tool.ruff.mccabe]
 max-complexity = 15

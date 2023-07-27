@@ -27,7 +27,7 @@ import asyncio
 import json
 import logging
 from collections import Counter
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import discord
 from discord.ext import commands
@@ -53,9 +53,9 @@ class Misc(Cog):
     async def embed_command(
         self,
         ctx: Context,
-        channel: Optional[discord.TextChannel] = None,
+        channel: discord.TextChannel | None = None,
         *,
-        data: Optional[str] = None,
+        data: str | None = None,
     ) -> None:
         """A nice command to make custom embeds.
 
@@ -119,9 +119,8 @@ class Misc(Cog):
         Members without can search up to 25 messages.
         """
         strategy = self._basic_cleanup_strategy
-        assert isinstance(ctx.author, discord.Member) and isinstance(ctx.me, discord.Member)
         is_mod = ctx.channel.permissions_for(ctx.author).manage_messages
-        if ctx.channel.permissions_for(ctx.me).manage_messages:
+        if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
             if is_mod:
                 strategy = self._complex_cleanup_strategy
             else:
@@ -137,6 +136,7 @@ class Misc(Cog):
             messages.extend(f"- **{author}**: {count}" for author, count in spammers)
 
         await ctx.reply("\n".join(messages), delete_after=10)
+        await ctx.message.delete(delay=10)
 
     async def _basic_cleanup_strategy(self, ctx: Context, search: int) -> dict[str, int]:
         count = 0
@@ -186,7 +186,7 @@ class Misc(Cog):
         log.debug("message edited and cached in %s", before.channel.id)
 
     @commands.command()
-    async def snipe(self, ctx: Context, *, channel: Optional[discord.TextChannel] = None) -> None:  # type: ignore
+    async def snipe(self, ctx: Context, *, channel: discord.TextChannel | None = None) -> None:  # type: ignore
         """Snipe a deleted message.
 
         Shows the last deleted message in the channel.
@@ -219,7 +219,7 @@ class Misc(Cog):
             embed = (
                 discord.Embed(
                     title="Message edited",
-                    description=(f"**Before:**\n{before.content}\n\n**After:**\n{after.content}"),
+                    description=f"**Before:**\n{before.content}\n\n**After:**\n{after.content}",
                     timestamp=before.created_at,
                 )
                 .set_author(name=before.author, icon_url=before.author.display_avatar.url)
@@ -245,11 +245,20 @@ class Misc(Cog):
     async def announce_group(
         self,
         ctx: Context,
-        channel: Optional[discord.TextChannel] = None,
+        channel: discord.TextChannel | None = None,
         *,
-        msg: Optional[str] = None,
+        msg: str | None = None,
     ) -> None:
-        """Send an announcement to the announcements channel."""
+        """Send an announcement to the announcements channel.
+
+        **Example:**
+        - `[p]announce This is announcement` - Send an announcement to the announcements channel.
+
+        **Note:** If you want to send an announcement to a different channel, you can specify the channel and message.
+
+        **Example:**
+        - `[p]announce #general This is announcement` - Send an announcement to #general.
+        """
         if ctx.invoked_subcommand is None:
             if not msg:
                 try:
@@ -273,8 +282,19 @@ class Misc(Cog):
 
     @announce_group.command(name="embed")
     @commands.has_permissions(manage_messages=True)
-    async def announce_embed_command(self, ctx: Context, channel: Optional[discord.TextChannel] = None, *, msg: str) -> None:
-        """Send an announcement to the announcements channel."""
+    async def announce_embed_command(self, ctx: Context, channel: discord.TextChannel | None = None, *, msg: str) -> None:
+        """Send an announcement to the announcements channel.
+
+        **Example:**
+        - [p]announce embed #announcements Hello World!
+
+        **Note:** providing a channel is optional.
+        - If a channel is not provided, the current channel will be used.
+        - If a channel is provided, the channel provided will be used.
+
+        **Example:**
+        - [p]announce embed Hello World!
+        """
         view = AnnouncementView(
             ctx=ctx,
             content=msg,
@@ -286,7 +306,12 @@ class Misc(Cog):
     @announce_group.command(name="quick", aliases=["q"])
     @commands.has_permissions(manage_messages=True)
     async def announce_quick_command(self, ctx: Context, *, msg: str) -> None:
-        """Send an announcement to the announcements channel."""
+        """Send an announcement to the announcements channel in normal Text Format.
+
+        **Example:**
+        - [p]announce quick Hello World!
+        - [p]announce q Hello World!
+        """
         await ctx.message.delete(delay=0)
 
         fmt = self.bot.config["announcement_format"] or "@everyone\n**{content}**\n\nRegards,\n{author_mention} ({author})"
@@ -295,10 +320,15 @@ class Misc(Cog):
 
         await ctx.send(msg)
 
-    @announce_group.command(name="quickembed", aliases=["qe"])
+    @announce_group.command(name="quickembed", aliases=["qe", "quick-embed"])
     @commands.has_permissions(manage_messages=True)
     async def announce_quickembed_command(self, ctx: Context, *, msg: str) -> None:
-        """Send an announcement to the announcements channel."""
+        """Send an announcement to the announcements channel in Embed Format.
+
+        **Example:**
+        - [p]announce quickembed Hello World!
+        - [p]announce qe Hello World!
+        """
         await ctx.message.delete(delay=0)
 
         fmt = self.bot.config["announcement_format"] or "@everyone\n**{content}**\n\nRegards,\n{author_mention} ({author})"
@@ -314,7 +344,13 @@ class Misc(Cog):
 
         **Example:**
         - `[p]announce format @everyone {content} - {author_mention}`
+        - `[p]announce f @everyone {content} - {author_mention}`
         """
+        if fmt.startswith("```") and fmt.endswith("```"):
+            fmt = fmt[3:-3]
+
+        fmt = fmt.strip()
+
         self.bot.config["announcement_format"] = fmt
         await self.bot.config.update_to_db()
         await ctx.message.add_reaction("\N{WHITE HEAVY CHECK MARK}")
@@ -323,6 +359,25 @@ class Misc(Cog):
         """Format the announcement."""
         cog: Autoresponder = self.bot.get_cog("Autoresponder")  # type: ignore
         return cog.formatter(response, message)
+
+    @commands.command(name="echo", aliases=["say"])
+    @commands.has_permissions(manage_messages=True)
+    async def echo_command(self, ctx: Context, *, msg: str) -> None:
+        """Echo a message.
+
+        **Example:**
+        - `[p]echo Hello World!`
+        """
+        allowed_mentions = discord.AllowedMentions(users=True)
+
+        if ctx.author.guild_permissions.mention_everyone:
+            allowed_mentions.everyone = True
+
+        if ctx.author.guild_permissions.manage_roles:
+            allowed_mentions.roles = True
+
+        await ctx.message.delete(delay=0)
+        await ctx.send(msg, allowed_mentions=allowed_mentions)
 
 
 async def setup(bot: Bot) -> None:
