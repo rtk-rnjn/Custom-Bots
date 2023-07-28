@@ -323,6 +323,38 @@ class Meta(Cog):
         )
         await ctx.reply(embed=embed)
 
+    @commands.command(name="permissiontrace", aliases=["pt", "permission-trace", "permtrace", "perm-trace"])
+    async def permission_trace(
+        self,
+        ctx: Context,
+        channel: discord.TextChannel | discord.VoiceChannel,
+        *,
+        entity: discord.Role | discord.Member | None = None,
+    ):
+        """Check the permissions of a role or member in a channel.
+
+        If no entity is provided, the default role will be used.
+
+        **Examples:**
+        - `[p]pt #general @Admin`
+        - `[p]pt #general @Member`
+        """
+        entity = entity or ctx.guild.default_role
+
+        perms = dict(channel.permissions_for(entity))
+
+        embed = discord.Embed(
+            title=f"Permission Trace: {entity.name}",
+            color=ctx.author.color,
+            timestamp=discord.utils.utcnow(),
+        )
+        desc = "".join(
+            f"`{perm.replace('_', ' ').title():<20}`: \N{WHITE HEAVY CHECK MARK}\n" for perm, value in perms.items() if value
+        )
+        embed.description = desc
+
+        await ctx.reply(embed=embed)
+
 
 async def setup(bot: Bot) -> None:
     """Load the Meta cog."""
