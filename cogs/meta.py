@@ -330,7 +330,7 @@ class Meta(Cog):
         channel: discord.TextChannel | discord.VoiceChannel,
         *,
         entity: discord.Role | discord.Member | None = None,
-    ):
+    ) -> None:
         """Check the permissions of a role or member in a channel.
 
         If no entity is provided, the default role will be used.
@@ -348,9 +348,9 @@ class Meta(Cog):
             color=ctx.author.color,
             timestamp=discord.utils.utcnow(),
         )
-        desc = "".join(
-            f"`{perm.replace('_', ' ').title():<20}`: \N{WHITE HEAVY CHECK MARK}\n" for perm, value in perms.items() if value
-        )
+        ls = [f"`{perm.replace('_', ' ').title():<22}`: \N{WHITE HEAVY CHECK MARK}\n" for perm, value in perms.items() if value]
+        ls.sort(key=len)
+        desc = "".join(ls)
         embed.description = desc
 
         await ctx.reply(embed=embed)

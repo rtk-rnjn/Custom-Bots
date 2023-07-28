@@ -483,7 +483,7 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         `[p]unlock #general` - unlocks the #general channel for no reason
         `[p]unlock 1234567890` - unlocks the channel with the ID 1234567890 for no reason
         """
-        ch = channel or ctx.channel  # type: discord.TextChannel | discord.VoiceChannel  # type: ignore
+        ch: discord.TextChannel | discord.VoiceChannel = channel or ctx.channel  # type: ignore
         if await self.unlock_channel_method(channel=ch, reason=reason):
             await ctx.reply(f"Unlocked **{ch}**.")
             await self.mod_log(ctx=ctx, target=ch, message=reason)
@@ -507,13 +507,15 @@ class Mod(Cog):  # pylint: disable=too-many-public-methods
         Providing limit is Optional. Can be left blank. Exmaple:
         `[p]purge` - purges last 100 messages
         """
+        limit = max(1, min(limit or 100, 1000))
+
         if ctx.invoked_subcommand is None:
 
             def check(_: discord.Message) -> bool:
                 return True
 
-            if await self.purge_method(ctx, limit or 100, check):
-                await ctx.reply(f"Purged **{limit or 100}** messages.")
+            if await self.purge_method(ctx, limit, check):
+                await ctx.reply(f"Purged **{limit}** messages.")
             else:
                 await ctx.reply("Failed purging messages. Try smaller amount.")
 
